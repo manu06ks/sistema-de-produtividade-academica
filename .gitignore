@@ -1,0 +1,12 @@
+# Dependências do Node.js
+node_modules/
+
+# Variáveis de ambiente e senhas (CRÍTICO)
+.env
+
+# Arquivos da Biblioteca Digital
+uploads/
+
+# Arquivos de log e lixo do sistema operacional
+npm-debug.log
+.DS_Store
