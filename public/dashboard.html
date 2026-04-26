@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyX - Painel Administrativo</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; color: #374151; }
+        .container { max-width: 1300px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        
+        .layout { display: grid; grid-template-columns: 350px 1fr; gap: 2rem; }
+        @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+        .card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+        h3 { margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; color: #1f2937; }
+        
+        input, select, textarea { width: 100%; padding: 0.6rem; margin-bottom: 1rem; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
+        textarea { resize: vertical; min-height: 60px; }
+        button { width: 100%; padding: 0.75rem; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-add { background-color: #3b82f6; color: white; }
+        .btn-add:hover { background-color: #2563eb; }
+        .logout-btn { background-color: #ef4444; color: white; width: auto; padding: 0.5rem 1rem; }
+
+        /* Nova Linha para Cor da Matéria */
+        .linha-cor { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+        .linha-cor input[type="color"] { width: 50px; height: 40px; padding: 0; margin: 0; cursor: pointer; }
+
+        /* Lista de Matérias */
+        .grid-materias { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; list-style: none; padding: 0; }
+        .materia-card { border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; font-size: 0.9rem; border-left: 6px solid #ccc; background: white;}
+        
+        /* Kanban */
+        .kanban-board { display: flex; gap: 1rem; overflow-x: auto; }
+        .kanban-col { flex: 1; min-width: 280px; background: #e5e7eb; border-radius: 8px; padding: 1rem; min-height: 450px; }
+        .kanban-col h4 { text-align: center; margin-top: 0; color: #4b5563; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+        
+        .tarefa-card { background: white; padding: 1rem; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: grab; margin-bottom: 10px; border-left: 5px solid #ccc; position: relative;}
+        
+        /* Cores de Prioridade */
+        .prioridade-alta { border-left-color: #ef4444 !important; }
+        .prioridade-media { border-left-color: #f59e0b !important; }
+        .prioridade-baixa { border-left-color: #10b981 !important; }
+        
+        .tag-materia { font-size: 0.7rem; padding: 3px 8px; border-radius: 12px; font-weight: bold; color: white; display: inline-block; margin-bottom: 5px;}
+        .badge-prova { position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; letter-spacing: 0.5px;}
+        .desc-text { font-size: 0.8rem; color: #6b7280; margin-top: 5px; line-height: 1.3; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1 id="boas-vindas">StudyX</h1>
+            <button class="logout-btn" onclick="fazerLogout()">Sair</button>
+        </header>
+
+        <div class="layout">
+            <aside>
+                <div class="card">
+                    <h3>Nova Disciplina</h3>
+                    <form id="form-materia">
+                        <input type="text" id="nome-materia" placeholder="Nome (ex: Cálculo III)" required>
+                        <input type="text" id="prof-materia" placeholder="Professor">
+                        <div class="linha-cor">
+                            <label style="font-size: 0.85rem; color: #4b5563;">Cor da Etiqueta:</label>
+                            <input type="color" id="cor-materia" value="#3b82f6">
+                        </div>
+                        <button type="submit" class="btn-add">Salvar Disciplina</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>Adicionar na Agenda</h3>
+                    <form id="form-tarefa">
+                        <select id="tipo-item" onchange="alternarFormulario()" style="font-weight: bold; background: #f9fafb;">
+                            <option value="tarefa">📝 Criar Tarefa</option>
+                            <option value="prova">🚨 Cadastrar Prova</option>
+                        </select>
+
+                        <select id="select-materia-tarefa" required>
+                            <option value="">Selecione a disciplina...</option>
+                        </select>
+                        
+                        <input type="text" id="titulo-tarefa" placeholder="Título (ex: Lista 3 / P1)" required>
+                        
+                        <div id="box-prioridade">
+                            <select id="prioridade-tarefa">
+                                <option value="baixa">🟢 Prioridade: Baixa</option>
+                                <option value="media" selected>🟡 Prioridade: Média</option>
+                                <option value="alta">🔴 Prioridade: Alta</option>
+                            </select>
+                        </div>
+
+                        <input type="date" id="data-tarefa" required> <textarea id="desc-tarefa" placeholder="Descrição ou observações (Opcional)"></textarea>
+
+                        <button type="submit" class="btn-add" id="btn-submit-agenda">Criar Tarefa</button>
+                    </form>
+                </div>
+            </aside>
+
+            <div class="card">
+                <h3>📚 Biblioteca Digital</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <form id="form-upload" enctype="multipart/form-data">
+                        <select id="select-materia-upload" required>
+                            <option value="">Vincular à disciplina...</option>
+                        </select>
+                        <input type="text" id="titulo-material" placeholder="Título do material (ex: Livro de Cálculo)" required>
+                        <input type="file" id="arquivo-input" required>
+                        <button type="submit" class="btn-add">Fazer Upload</button>
+                    </form>
+
+                    <div id="lista-materiais" style="max-height: 300px; overflow-y: auto;">
+                        <p class="vazio">Nenhum documento enviado ainda.</p>
+                    </div>
+                </div>
+            </div>
+
+            <main>
+                <div class="card">
+                    <h3>Minhas Disciplinas</h3>
+                    <ul id="lista-materias-grid" class="grid-materias"></ul>
+                </div>
+
+                <div class="card">
+                    <h3>Quadro Kanban</h3>
+                    <div class="kanban-board">
+                        <div class="kanban-col" id="pendente" ondrop="soltar(event)" ondragover="permitir(event)">
+                            <h4>A Fazer</h4><div class="container-cards"></div>
+                        </div>
+                        <div class="kanban-col" id="em_andamento" ondrop="soltar(event)" ondragover="permitir(event)">
+                            <h4>Fazendo / Estudando</h4><div class="container-cards"></div>
+                        </div>
+                        <div class="kanban-col" id="concluida" ondrop="soltar(event)" ondragover="permitir(event)">
+                            <h4>Concluído</h4><div class="container-cards"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('studyx_token');
+        if (!token) window.location.href = "/index.html";
+
+        carregarTudo();
+
+        async function carregarTudo() {
+            await carregarMaterias();
+            await carregarTarefas();
+            await carregarBiblioteca();
+        }
+
+        // --- LÓGICA DO FORMULÁRIO DINÂMICO ---
+        function alternarFormulario() {
+            const tipo = document.getElementById('tipo-item').value;
+            const boxPrioridade = document.getElementById('box-prioridade');
+            const desc = document.getElementById('desc-tarefa');
+            const btn = document.getElementById('btn-submit-agenda');
+
+            if (tipo === 'prova') {
+                boxPrioridade.style.display = 'none'; // Prova esconde prioridade (é sempre alta no backend/frontend)
+                desc.placeholder = "Conteúdos que vão cair na prova...";
+                btn.innerText = "🚨 Cadastrar Prova";
+                btn.style.backgroundColor = "#ef4444";
+            } else {
+                boxPrioridade.style.display = 'block';
+                desc.placeholder = "Descrição ou observações (Opcional)";
+                btn.innerText = "📝 Criar Tarefa";
+                btn.style.backgroundColor = "#3b82f6";
+            }
+        }
+
+        // --- INTEGRAÇÃO COM BACKEND ---
+        async function carregarMaterias() {
+            try {
+                const res = await fetch('/materias', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.status === 401 || res.status === 403) return fazerLogout();
+                
+                const materias = await res.json();
+                const select = document.getElementById('select-materia-tarefa');
+                const grid = document.getElementById('lista-materias-grid');
+                
+                select.innerHTML = '<option value="">Selecione a disciplina...</option>';
+                grid.innerHTML = '';
+
+                if (materias.length === 0) {
+                    grid.innerHTML = '<li style="grid-column: 1/-1; text-align: center; color: #9ca3af;">Nenhuma matéria cadastrada.</li>';
+                    return;
+                }
+                const selectUpload = document.getElementById('select-materia-upload');
+                selectUpload.innerHTML = '<option value="">Vincular à disciplina...</option>';
+                materias.forEach(m => { selectUpload.innerHTML += `<option value="${m.id}">${m.nome}</option>`; });
+
+                materias.forEach(m => {
+                    select.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
+                    
+                    // Quadro de matérias com a cor escolhida
+                    const item = document.createElement('li');
+                    item.className = 'materia-card';
+                    item.style.borderLeftColor = m.cor;
+                    item.innerHTML = `<strong>${m.nome}</strong><br><span style="color:#6b7280; font-size:0.8rem;">${m.professor || ''}</span>`;
+                    grid.appendChild(item);
+                });
+            } catch (e) { console.error("Erro materias:", e); }
+        }
+
+        async function carregarBiblioteca() {
+    try {
+        const res = await fetch('/materiais', { headers: { 'Authorization': `Bearer ${token}` } });
+        const materiais = await res.json();
+        const container = document.getElementById('lista-materiais');
+        const select = document.getElementById('select-materia-upload');
+
+        container.innerHTML = '';
+        
+        // Também aproveita para preencher o select de upload com as matérias existentes
+        // (Já temos isso na carregarMaterias(), mas é bom garantir aqui)
+
+        if (materiais.length === 0) {
+            container.innerHTML = '<p class="vazio">Biblioteca vazia.</p>';
+            return;
+        }
+
+        materiais.forEach(m => {
+            const div = document.createElement('div');
+            div.style = "background: #f9fafb; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e5e7eb;";
+            
+            // Verifica o tipo para colocar um ícone ou cor diferente
+            const icon = m.tipo_arquivo.includes('pdf') ? '📄' : '🖼️';
+
+            div.innerHTML = `
+                <div>
+                    <span style="font-size: 0.7rem; color: #3b82f6; font-weight: bold;">${m.materia_nome}</span>
+                    <p style="margin: 2px 0; font-size: 0.9rem; font-weight: bold;">${icon} ${m.titulo}</p>
+                </div>
+                <a href="/${m.caminho_arquivo}" target="_blank" style="text-decoration: none; font-size: 0.8rem; color: #3b82f6; font-weight: bold;">Abrir</a>
+            `;
+            container.appendChild(div);
+        });
+    } catch (e) { console.error(e); }
+}
+
+        // Lógica de envio do arquivo
+            document.getElementById('form-upload').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            const arquivoInput = document.getElementById('arquivo-input');
+            
+            formData.append('materia_id', document.getElementById('select-materia-upload').value);
+            formData.append('titulo', document.getElementById('titulo-material').value);
+            formData.append('arquivo', arquivoInput.files[0]);
+
+            const res = await fetch('/materiais/upload', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData // Note que NÃO usamos JSON aqui, o FormData cuida de tudo
+            });
+
+            if (res.ok) {
+                e.target.reset();
+                carregarBiblioteca();
+            } else {
+                alert("Erro no upload.");
+            }
+        };
+        async function carregarTarefas() {
+            try {
+                const res = await fetch('/tarefas', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.status === 401 || res.status === 403) return fazerLogout();
+                
+                const tarefas = await res.json();
+                document.querySelectorAll('.kanban-col .container-cards').forEach(c => c.innerHTML = '');
+
+                tarefas.forEach(t => {
+                    const card = document.createElement('div');
+                    card.className = `tarefa-card prioridade-${t.tipo === 'prova' ? 'alta' : t.prioridade}`;
+                    card.draggable = true;
+                    card.id = `t-${t.id}`;
+                    card.ondragstart = (ev) => ev.dataTransfer.setData("text", ev.target.id);
+
+                    const data = t.data_entrega ? new Date(t.data_entrega).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Sem data';
+                    
+                    let htmlCard = `
+                        ${t.tipo === 'prova' ? '<span class="badge-prova">PROVA</span>' : ''}
+                        <span class="tag-materia" style="background-color: ${t.materia_cor};">${t.materia_nome}</span>
+                        <p style="margin: 8px 0 4px 0; font-weight: bold; color: #1f2937;">${t.titulo}</p>
+                        <small style="color: #ef4444; font-weight: bold;">📅 ${data}</small>
+                    `;
+
+                    // Mostra descrição/conteúdos se existir
+                    const textoDesc = t.tipo === 'prova' ? t.conteudos : t.descricao;
+                    if (textoDesc) {
+                        htmlCard += `<div class="desc-text">${textoDesc}</div>`;
+                    }
+
+                    card.innerHTML = htmlCard;
+                    
+                    const col = document.getElementById(t.status || 'pendente').querySelector('.container-cards');
+                    if (col) col.appendChild(card);
+                });
+            } catch (e) { console.error("Erro tarefas:", e); }
+        }
+
+        // --- SUBMIT DOS FORMULÁRIOS ---
+        document.getElementById('form-materia').onsubmit = async (e) => {
+            e.preventDefault();
+            const payload = {
+                nome: document.getElementById('nome-materia').value,
+                professor: document.getElementById('prof-materia').value,
+                cor: document.getElementById('cor-materia').value
+            };
+            await fetch('/materias', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+            e.target.reset();
+            carregarMaterias();
+        };
+
+        document.getElementById('form-tarefa').onsubmit = async (e) => {
+            e.preventDefault();
+            const tipo = document.getElementById('tipo-item').value;
+            
+            const payload = {
+                materia_id: document.getElementById('select-materia-tarefa').value,
+                titulo: document.getElementById('titulo-tarefa').value,
+                data_entrega: document.getElementById('data-tarefa').value,
+                tipo: tipo,
+                // Se for prova, força alta prioridade e salva o texto como conteúdo. Se tarefa, salva normal.
+                prioridade: tipo === 'prova' ? 'alta' : document.getElementById('prioridade-tarefa').value,
+                descricao: tipo === 'tarefa' ? document.getElementById('desc-tarefa').value : null,
+                conteudos: tipo === 'prova' ? document.getElementById('desc-tarefa').value : null
+            };
+
+            await fetch('/tarefas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+            
+            // Reseta o form, mas mantém na opção "Tarefa"
+            e.target.reset();
+            document.getElementById('tipo-item').value = 'tarefa';
+            alternarFormulario(); 
+            carregarTarefas();
+        };
+
+        // --- DRAG AND DROP E LOGOUT ---
+        function permitir(ev) { ev.preventDefault(); }
+        async function soltar(ev) {
+            ev.preventDefault();
+            const id = ev.dataTransfer.getData("text");
+            const el = document.getElementById(id);
+            const col = ev.target.closest('.kanban-col');
+            if (col && el) {
+                col.querySelector('.container-cards').appendChild(el);
+                await fetch(`/tarefas/${id.split('-')[1]}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status: col.id })
+                });
+            }
+        }
+        function fazerLogout() { localStorage.removeItem('studyx_token'); window.location.href = "/index.html"; }
+    </script>
+</body>
+</html>

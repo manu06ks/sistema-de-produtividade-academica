@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>studyx - Acesso</title>
+    <style>
+        /* Estilos básicos para uma interface limpa */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 320px;
+        }
+        h2 { text-align: center; color: #1f2937; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-size: 0.875rem; color: #4b5563; margin-bottom: 0.25rem; }
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+            outline: none;
+        }
+        input:focus { border-color: #3b82f6; }
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        button:hover { background-color: #2563eb; }
+        .toggle-link {
+            display: block;
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: #3b82f6;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        /* Classe para esconder formulários */
+        .escondido { display: none; }
+        /* Mensagens de erro/sucesso */
+        #mensagem { text-align: center; margin-top: 1rem; font-size: 0.875rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div id="box-login">
+            <h2>Entrar no studyx</h2>
+            <form id="form-login">
+                <div class="form-group">
+                    <label>E-mail</label>
+                    <input type="email" id="email-login" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="senha-login" required>
+                </div>
+                <button type="submit">Entrar</button>
+            </form>
+            <span class="toggle-link" onclick="alternarTelas()">Não tem conta? Cadastre-se</span>
+        </div>
+
+        <div id="box-cadastro" class="escondido">
+            <h2>Criar Conta</h2>
+            <form id="form-cadastro">
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="nome-cadastro" required>
+                </div>
+                <div class="form-group">
+                    <label>E-mail</label>
+                    <input type="email" id="email-cadastro" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="senha-cadastro" required>
+                </div>
+                <button type="submit">Cadastrar</button>
+            </form>
+            <span class="toggle-link" onclick="alternarTelas()">Já tem conta? Faça Login</span>
+        </div>
+
+        <p id="mensagem"></p>
+    </div>
+
+    <script>
+        const boxLogin = document.getElementById('box-login');
+        const boxCadastro = document.getElementById('box-cadastro');
+        const mensagemEl = document.getElementById('mensagem');
+
+        // Alterna entre Login e Cadastro
+        function alternarTelas() {
+            boxLogin.classList.toggle('escondido');
+            boxCadastro.classList.toggle('escondido');
+            mensagemEl.innerText = ""; // Limpa mensagens
+        }
+
+        // --- LÓGICA DE CADASTRO ---
+        document.getElementById('form-cadastro').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Impede a página de recarregar
+            
+            const nome = document.getElementById('nome-cadastro').value;
+            const email = document.getElementById('email-cadastro').value;
+            const senha = document.getElementById('senha-cadastro').value;
+
+            try {
+                // Dispara os dados para a rota POST /cadastro do seu Express
+                const resposta = await fetch('/cadastro', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, email, senha })
+                });
+
+                const dados = await resposta.json();
+
+                if (resposta.ok) {
+                    mensagemEl.style.color = "green";
+                    mensagemEl.innerText = "Sucesso! Agora faça o login.";
+                    setTimeout(alternarTelas, 2000); // Muda pra tela de login após 2s
+                } else {
+                    mensagemEl.style.color = "red";
+                    mensagemEl.innerText = dados.erro;
+                }
+            } catch (error) {
+                mensagemEl.innerText = "Erro ao conectar com o servidor.";
+            }
+        });
+
+        // --- LÓGICA DE LOGIN ---
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email-login').value;
+            const senha = document.getElementById('senha-login').value;
+
+            try {
+                // Dispara os dados para a rota POST /login do seu Express
+                const resposta = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+
+                const dados = await resposta.json();
+
+                if (resposta.ok) {
+                    mensagemEl.style.color = "green";
+                    mensagemEl.innerText = "Login aprovado! Entrando...";
+                    
+                    // ⭐️ A MÁGICA ACONTECE AQUI: Guardando o Token JWT no navegador
+                    localStorage.setItem('studyx_token', dados.token);
+                    
+                    // Redireciona para o painel de estudos (vamos criar esse arquivo depois)
+                    setTimeout(() => {
+                        window.location.href = "/dashboard.html";
+                    }, 1000);
+
+                } else {
+                    mensagemEl.style.color = "red";
+                    mensagemEl.innerText = dados.erro;
+                }
+            } catch (error) {
+                mensagemEl.innerText = "Erro ao conectar com o servidor.";
+            }
+        });
+    </script>
+</body>
+</html>
