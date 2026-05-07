@@ -161,6 +161,37 @@ app.get("/materias", verificarToken, async (req, res) => {
     }
 });
 
+// --- ROTA PARA EDITAR MATÉRIA ---
+app.put("/materias/:id", verificarToken, async (req, res) => {
+    const { id } = req.params; // Pega o ID da matéria que está na URL
+    const { nome, professor, cor } = req.body; // Pega os novos dados digitados
+
+    try {
+        const client = await db.connect();
+        
+        // O "AND usuario_id = $5" é a sua trava de segurança!
+        const resultado = await client.query(
+            "UPDATE materias SET nome = $1, professor = $2, cor = $3 WHERE id = $4 AND usuario_id = $5 RETURNING *",
+            [nome, professor, cor, id, req.usuario.id]
+        );
+        
+        client.release();
+
+        // Se rowCount for 0, significa que a matéria não existe ou é de outro usuário
+        if (resultado.rowCount === 0) {
+            return res.status(404).json({ erro: "Matéria não encontrada ou acesso negado." });
+        }
+
+        res.json({ 
+            mensagem: "Disciplina atualizada com sucesso!", 
+            materia: resultado.rows[0] 
+        });
+    } catch (error) {
+        console.error("Erro ao editar matéria:", error);
+        res.status(500).json({ erro: "Falha ao editar a disciplina." });
+    }
+});
+
 // --- TAREFAS / KANBAN ---
 app.post("/tarefas", verificarToken, async (req, res) => {
     const { materia_id, titulo, data_entrega, prioridade, descricao, tipo, conteudos } = req.body;
@@ -270,5 +301,5 @@ app.get("/usuarios", async (req, res) => {
 // 7. INICIALIZAÇÃO DO SERVIDOR
 // ==========================================
 app.listen(port, () => {
-    console.log(`Backend rodando na porta ${port}`);
+    console.log(`🚀 Backend rodando na porta ${port}`);
 });
