@@ -1,13 +1,10 @@
-// 1. IMPORTAÇÕES E CONFIGURAÇÕES INICIAIS
-require("dotenv").config(); // DEVE ser a primeira linha
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const db = require("./db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -17,7 +14,6 @@ app.use(cors());
 app.use(express.json()); // Permite ler arquivos .json
 app.use('/uploads', express.static('uploads')); // Torna a pasta uploads acessível para o navegador
 
-// Inicializa a conexão com o banco de dados
 db.connect();
 
 // 3. CONFIGURAÇÃO DO UPLOAD DE ARQUIVOS (Multer)
@@ -32,7 +28,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// 4. MIDDLEWARE DE SEGURANÇA (Verificação de Token)
+// MIDDLEWARE DE SEGURANÇA (Verificação de Token)
 function verificarToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Formato: "Bearer TOKEN_AQUI"
@@ -42,6 +38,7 @@ function verificarToken(req, res, next) {
     }
 
     try {
+        // CORRIGIDO: Adicionado o jwt.
         const usuarioDecodificado = jwt.verify(token, process.env.JWT_SECRET);
         req.usuario = usuarioDecodificado; // Pendura os dados na requisição
         next(); // Manda o Express seguir em frente
@@ -50,13 +47,11 @@ function verificarToken(req, res, next) {
     }
 }
 
-// ==========================================
-// 5. ROTAS PÚBLICAS (Não exigem Token)
-// ==========================================
+// ROTAS PÚBLICAS (Não exigem Token)
 
 // Rota de Health Check (Checagem de Saúde)
 app.get("/", (req, res) => {
-    res.json({ status: "🚀 API do StudyX rodando perfeitamente!" });
+    res.json({ status: "API do StudyX rodando perfeitamente!" });
 });
 
 // Cadastro de novos usuários
@@ -71,6 +66,7 @@ app.post("/cadastro", async (req, res) => {
             return res.status(400).json({ erro: "Este e-mail já está em uso!" });
         }
 
+        // CORRIGIDO: Adicionado o bcrypt.
         const salt = await bcrypt.genSalt(10);
         const senhaCriptografada = await bcrypt.hash(senha, salt);
 
@@ -100,11 +96,13 @@ app.post("/login", async (req, res) => {
             return res.status(401).json({ erro: "E-mail ou senha incorretos" });
         }
 
+        // CORRIGIDO: Adicionado o bcrypt.
         const senhaValida = await bcrypt.compare(senha, usuario.senha);
         if (!senhaValida) {
             return res.status(401).json({ erro: "E-mail ou senha incorretos" });
         }
 
+        // CORRIGIDO: Adicionado o jwt.
         const token = jwt.sign(
             { id: usuario.id, nome: usuario.nome },
             process.env.JWT_SECRET,
@@ -118,10 +116,7 @@ app.post("/login", async (req, res) => {
     }
 });
 
-// ==========================================
-// 6. ROTAS PROTEGIDAS (Exigem Token Válido)
-// ==========================================
-
+// ROTAS PROTEGIDAS (exigem Token)
 // Painel de boas-vindas
 app.get("/dados-painel", verificarToken, async (req, res) => {
     try {
@@ -163,13 +158,12 @@ app.get("/materias", verificarToken, async (req, res) => {
 
 // --- ROTA PARA EDITAR MATÉRIA ---
 app.put("/materias/:id", verificarToken, async (req, res) => {
-    const { id } = req.params; // Pega o ID da matéria que está na URL
-    const { nome, professor, cor } = req.body; // Pega os novos dados digitados
+    const { id } = req.params; 
+    const { nome, professor, cor } = req.body; 
 
     try {
         const client = await db.connect();
         
-        // O "AND usuario_id = $5" é a sua trava de segurança!
         const resultado = await client.query(
             "UPDATE materias SET nome = $1, professor = $2, cor = $3 WHERE id = $4 AND usuario_id = $5 RETURNING *",
             [nome, professor, cor, id, req.usuario.id]
@@ -177,7 +171,6 @@ app.put("/materias/:id", verificarToken, async (req, res) => {
         
         client.release();
 
-        // Se rowCount for 0, significa que a matéria não existe ou é de outro usuário
         if (resultado.rowCount === 0) {
             return res.status(404).json({ erro: "Matéria não encontrada ou acesso negado." });
         }
@@ -244,6 +237,137 @@ app.put("/tarefas/:id/status", verificarToken, async (req, res) => {
     }
 });
 
+// --- ROTA PARA DELETAR MATÉRIA ---
+app.delete("/materias/:id", verificarToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const client = await db.connect();
+        // O banco precisa deletar apenas se for do usuário autenticado
+        const resultado = await client.query("DELETE FROM materias WHERE id = $1 AND usuario_id = $2 RETURNING *", [id, req.usuario.id]);
+        client.release();
+        
+        if (resultado.rowCount === 0) {
+            return res.status(404).json({ erro: "Matéria não encontrada ou acesso negado." });
+        }
+        res.json({ mensagem: "Matéria deletada com sucesso!" });
+    } catch (error) {
+        console.error("Erro ao deletar matéria:", error);
+        res.status(500).json({ erro: "Falha ao deletar matéria." });
+    }
+});
+
+// --- ROTA PARA EDITAR TAREFA ---
+app.put("/tarefas/:id", verificarToken, async (req, res) => {
+    const { id } = req.params;
+    const { titulo, data_entrega, descricao, tipo } = req.body;
+    try {
+        const client = await db.connect();
+        
+        // Segurança: Verifica se a tarefa pertence a uma matéria do usuário logado
+        const check = await client.query(`
+            SELECT t.id FROM tarefas t
+            JOIN materias m ON t.materia_id = m.id
+            WHERE t.id = $1 AND m.usuario_id = $2
+        `, [id, req.usuario.id]);
+
+        if (check.rowCount === 0) {
+            client.release();
+            return res.status(403).json({ erro: "Acesso negado à tarefa." });
+        }
+
+        await client.query(
+            "UPDATE tarefas SET titulo = $1, data_entrega = $2, descricao = $3, tipo = $4 WHERE id = $5",
+            [titulo, data_entrega, descricao, tipo, id]
+        );
+        client.release();
+        res.json({ mensagem: "Tarefa atualizada com sucesso!" });
+    } catch (error) {
+        console.error("Erro ao editar tarefa:", error);
+        res.status(500).json({ erro: "Erro ao atualizar tarefa." });
+    }
+});
+
+// --- ROTA PARA DELETAR MATÉRIA (COM CASCATA) ---
+app.delete("/materias/:id", verificarToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const client = await db.connect();
+        
+        // 1. Verifica se a matéria existe e pertence à Emanuela
+        const check = await client.query("SELECT id FROM materias WHERE id = $1 AND usuario_id = $2", [id, req.usuario.id]);
+        if (check.rowCount === 0) {
+            client.release();
+            return res.status(404).json({ erro: "Matéria não encontrada ou acesso negado." });
+        }
+
+        // 2. Limpeza em cascata (Evita o bloqueio do PostgreSQL)
+        // Apaga as sessões do cronômetro ligadas às tarefas desta matéria
+        await client.query("DELETE FROM sessoes_estudo WHERE tarefa_id IN (SELECT id FROM tarefas WHERE materia_id = $1)", [id]);
+        
+        // Apaga os PDFs e arquivos da biblioteca desta matéria
+        await client.query("DELETE FROM materiais WHERE materia_id = $1", [id]);
+        
+        // Apaga as tarefas em si
+        await client.query("DELETE FROM tarefas WHERE materia_id = $1", [id]);
+        
+        // 3. Finalmente, apaga a matéria limpa
+        await client.query("DELETE FROM materias WHERE id = $1", [id]);
+        
+        client.release();
+        res.json({ mensagem: "Matéria e todos os seus vínculos foram deletados com sucesso!" });
+    } catch (error) {
+        console.error("Erro ao deletar matéria:", error);
+        res.status(500).json({ erro: "Falha ao deletar matéria." });
+    }
+});
+
+// --- ROTA PARA DELETAR TAREFA (COM CASCATA) ---
+app.delete("/tarefas/:id", verificarToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const client = await db.connect();
+        
+        const check = await client.query(`
+            SELECT t.id FROM tarefas t
+            JOIN materias m ON t.materia_id = m.id
+            WHERE t.id = $1 AND m.usuario_id = $2
+        `, [id, req.usuario.id]);
+
+        if (check.rowCount === 0) {
+            client.release();
+            return res.status(403).json({ erro: "Acesso negado à tarefa." });
+        }
+
+        // Limpa o cronômetro antes de apagar a tarefa
+        await client.query("DELETE FROM sessoes_estudo WHERE tarefa_id = $1", [id]);
+        await client.query("DELETE FROM tarefas WHERE id = $1", [id]);
+        
+        client.release();
+        res.json({ mensagem: "Tarefa deletada com sucesso!" });
+    } catch (error) {
+        console.error("Erro ao deletar tarefa:", error);
+        res.status(500).json({ erro: "Erro ao deletar tarefa." });
+    }
+});
+
+// --- ROTA PARA ARQUIVAR TAREFAS CONCLUÍDAS ---
+app.put("/tarefas/arquivar-concluidas", verificarToken, async (req, res) => {
+    try {
+        const client = await db.connect();
+        // Muda o status de 'concluida' para 'arquivada' para sumir do Kanban
+        await client.query(`
+            UPDATE tarefas SET status = 'arquivada' 
+            WHERE status = 'concluida' 
+            AND materia_id IN (SELECT id FROM materias WHERE usuario_id = $1)
+        `, [req.usuario.id]);
+        client.release();
+        res.json({ mensagem: "Tarefas arquivadas e ocultadas do quadro!" });
+    } catch (error) {
+        console.error("Erro ao arquivar:", error);
+        res.status(500).json({ erro: "Erro ao arquivar tarefas." });
+    }
+});
+
 // --- BIBLIOTECA DIGITAL / MATERIAIS ---
 app.post("/materiais/upload", verificarToken, upload.single('arquivo'), async (req, res) => {
     const { materia_id, titulo } = req.body;
@@ -284,16 +408,20 @@ app.get("/materiais", verificarToken, async (req, res) => {
     }
 });
 
-// Rota de Teste (Usuários) - Útil para dev, mas considere apagar quando for lançar o app oficial
-app.get("/usuarios", async (req, res) => {
+// --- ROTA PARA SALVAR SESSÃO DE ESTUDO ---
+app.post("/sessoes-estudo", verificarToken, async (req, res) => {
+    const { tarefa_id, duracao_segundos } = req.body;
     try {
-        const client = await db.connect(); 
-        const resultado = await client.query("SELECT * FROM usuarios");
-        res.json(resultado.rows);
+        // CORRIGIDO: Retirado o .db duplicado
+        const client = await db.connect();
+        const novaSessao = await client.query(
+            "INSERT INTO sessoes_estudo (tarefa_id, duracao_segundos) VALUES ($1, $2) RETURNING *",
+            [tarefa_id, duracao_segundos]
+        );
         client.release();
+        res.status(201).json(novaSessao.rows[0]);
     } catch (error) {
-        console.error("Deu ruim na busca:", error);
-        res.status(500).json({ erro: "Falha ao buscar os usuários no banco" });
+        res.status(500).json({ erro: "Erro ao salvar sessão de estudo." });
     }
 });
 
@@ -301,5 +429,5 @@ app.get("/usuarios", async (req, res) => {
 // 7. INICIALIZAÇÃO DO SERVIDOR
 // ==========================================
 app.listen(port, () => {
-    console.log(`🚀 Backend rodando na porta ${port}`);
+    console.log(` Backend rodando na porta ${port}`);
 });
