@@ -11,7 +11,6 @@ app.use(cors());
 const port = process.env.PORT || 3000;
 
 // 2. MIDDLEWARES GERAIS
-app.use(cors());
 app.use(express.json()); // Permite ler arquivos .json
 app.use('/uploads', express.static('uploads')); // Torna a pasta uploads acessível para o navegador
 
