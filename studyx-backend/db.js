@@ -1,30 +1,15 @@
-const { Pool } = require("pg");
+const { Pool } = require('pg');
+require('dotenv').config();
 
-async function connect() {
-    // Reutiliza a conexão se já existir
-    if (global.connection) {
-        return global.connection.connect();
+const db = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false // Isso substitui a necessidade de baixar aquele arquivo de certificado da Azure!
     }
+});
 
-    const pool = new Pool({
-        connectionString: process.env.CONNECTION_STRING 
-    });
+db.connect()
+    .then(() => console.log("Conectado ao banco de dados com sucesso!"))
+    .catch(err => console.error("Erro ao conectar ao banco de dados", err));
 
-    try {
-        const client = await pool.connect();
-        console.log("Conectado ao banco de dados e criou o pool de conexão");
-        
-        const res = await client.query("select now()");
-        console.log("Hora no DB:", res.rows[0]);
-        
-        client.release(); // Libera o client de volta pro pool
-
-        global.connection = pool;
-        return pool.connect();
-    } catch (error) {
-        console.error("Erro ao conectar com o banco de dados:", error.message);
-    }
-}
-
-// Exporta a função para ser usada no index.js
-module.exports = { connect };
+module.exports = db;
