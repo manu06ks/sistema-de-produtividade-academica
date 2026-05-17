@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 
 const app = express();
+app.use(cors());
 const port = process.env.PORT || 3000;
 
 // 2. MIDDLEWARES GERAIS

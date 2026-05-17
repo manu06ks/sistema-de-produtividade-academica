@@ -59,21 +59,21 @@ export default function Dashboard() {
 
   const carregarMaterias = async () => {
     try {
-      const res = await fetch('http://localhost:3000/materias', { headers });
+      const res = await fetch('https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/materias', { headers });
       setMaterias(await res.json());
     } catch (e) { console.error(e); }
   };
 
   const carregarTarefas = async () => {
     try {
-      const res = await fetch('http://localhost:3000/tarefas', { headers });
+      const res = await fetch('https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/tarefas', { headers });
       setTarefas(await res.json());
     } catch (e) { console.error(e); }
   };
 
   const carregarBiblioteca = async () => {
     try {
-      const res = await fetch('http://localhost:3000/materiais', { headers });
+      const res = await fetch('https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/materiais', { headers });
       setMateriais(await res.json());
     } catch (e) { console.error(e); }
   };
@@ -133,7 +133,7 @@ export default function Dashboard() {
   const iniciarPausa = (min) => { setTimerMode('pausa'); setTimeLeft(min * 60); setIsTimerActive(true); };
   const finalizarSessaoEstudo = async () => {
     if (timeElapsed === 0) return;
-    await fetch('http://localhost:3000/sessoes-estudo', { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ tarefa_id: tarefaSelecionadaTimer, duracao_segundos: timeElapsed }) });
+    await fetch('https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/sessoes-estudo', { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ tarefa_id: tarefaSelecionadaTimer, duracao_segundos: timeElapsed }) });
     alert(`Sessão de ${formatTime(timeElapsed)} salva! 🚀`); setTimeElapsed(0); setIsTimerActive(false); setTimerMode('foco');
   };
   const formatTime = (sec) => `${Math.floor(sec / 60).toString().padStart(2, '0')}:${(sec % 60).toString().padStart(2, '0')}`;
@@ -141,37 +141,37 @@ export default function Dashboard() {
   // --- FUNÇÕES DE CRUD E SUBMITS ---
   const submitMateria = async (e) => {
     e.preventDefault();
-    const url = editandoMateriaId ? `http://localhost:3000/materias/${editandoMateriaId}` : 'http://localhost:3000/materias';
+    const url = editandoMateriaId ? `https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/materias/${editandoMateriaId}` : 'https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/materias';
     await fetch(url, { method: editandoMateriaId ? 'PUT' : 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: nomeMateria, professor: profMateria, cor: corMateria }) });
     fecharModalMateria(); carregarMaterias(); setMateriaDetalhe(null);
   };
 
   const deletarMateria = async (id) => {
     if (!window.confirm("Atenção: Tem certeza que deseja apagar esta disciplina? Todas as tarefas e arquivos associados serão deletados!")) return;
-    await fetch(`http://localhost:3000/materias/${id}`, { method: 'DELETE', headers });
+    await fetch(`https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/materias/${id}`, { method: 'DELETE', headers });
     setMateriaDetalhe(null); carregarTudo();
   };
 
   const submitTarefa = async (e) => {
     e.preventDefault();
     if (tarefaEditando) {
-      await fetch(`http://localhost:3000/tarefas/${tarefaEditando.id}`, { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ titulo: tituloTarefa, data_entrega: dataTarefa, tipo: tipoItem, descricao: descTarefa }) });
+      await fetch(`https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/tarefas/${tarefaEditando.id}`, { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ titulo: tituloTarefa, data_entrega: dataTarefa, tipo: tipoItem, descricao: descTarefa }) });
       setTarefaEditando(null);
     } else {
-      await fetch('http://localhost:3000/tarefas', { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ materia_id: materiaTarefa, titulo: tituloTarefa, data_entrega: dataTarefa, tipo: tipoItem, prioridade: tipoItem === 'prova' ? 'alta' : prioridadeTarefa, descricao: descTarefa, conteudos: tipoItem === 'prova' ? descTarefa : null }) });
+      await fetch('https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/tarefas', { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ materia_id: materiaTarefa, titulo: tituloTarefa, data_entrega: dataTarefa, tipo: tipoItem, prioridade: tipoItem === 'prova' ? 'alta' : prioridadeTarefa, descricao: descTarefa, conteudos: tipoItem === 'prova' ? descTarefa : null }) });
     }
     setTituloTarefa(''); setDataTarefa(''); setDescTarefa(''); carregarTarefas();
   };
 
   const deletarTarefa = async (id) => {
     if (!window.confirm("Deseja mesmo apagar esta tarefa?")) return;
-    await fetch(`http://localhost:3000/tarefas/${id}`, { method: 'DELETE', headers });
+    await fetch(`https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/tarefas/${id}`, { method: 'DELETE', headers });
     setTarefaEditando(null); carregarTarefas();
   };
 
   const arquivarConcluidas = async () => {
     if (!window.confirm("Deseja limpar o quadro e arquivar todas as tarefas concluídas?")) return;
-    await fetch('http://localhost:3000/tarefas/arquivar-concluidas', { 
+    await fetch('https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/tarefas/arquivar-concluidas', { 
       method: 'PUT', 
       headers: { 'Authorization': `Bearer ${token}` } 
     });
@@ -181,7 +181,7 @@ export default function Dashboard() {
   const submitUpload = async (e) => {
     e.preventDefault();
     const formData = new FormData(); formData.append('materia_id', materiaUpload); formData.append('titulo', tituloUpload); formData.append('arquivo', arquivoUpload);
-    await fetch('http://localhost:3000/materiais/upload', { method: 'POST', headers, body: formData });
+    await fetch('https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/materiais/upload', { method: 'POST', headers, body: formData });
     setTituloUpload(''); setMateriaUpload(''); carregarBiblioteca(); setIsModalDocumentoOpen(false);
   };
 
@@ -190,7 +190,7 @@ export default function Dashboard() {
   const handleDrop = async (e, novoStatus) => {
     e.preventDefault(); const id = e.dataTransfer.getData("text/plain");
     setTarefas(prev => prev.map(t => t.id == id ? { ...t, status: novoStatus } : t));
-    await fetch(`http://localhost:3000/tarefas/${id}/status`, { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ status: novoStatus }) });
+    await fetch(`https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/tarefas/${id}/status`, { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ status: novoStatus }) });
   };
 
   const abrirModalNovaMateria = () => { setNomeMateria(''); setProfMateria(''); setEditandoMateriaId(null); setIsModalMateriaOpen(true); };
@@ -444,7 +444,7 @@ export default function Dashboard() {
                   {materiais.map(m => (
                     <div key={m.id} className="min-w-[150px] bg-white p-2 rounded-lg border border-gray-100 shadow-sm text-xs">
                       <strong className="block truncate">{m.titulo}</strong>
-                      <a href={`http://localhost:3000/${m.caminho_arquivo}`} target="_blank" rel="noreferrer" className="text-[10px] text-blue-500 hover:underline">Abrir</a>
+                      <a href={`https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/${m.caminho_arquivo}`} target="_blank" rel="noreferrer" className="text-[10px] text-blue-500 hover:underline">Abrir</a>
                     </div>
                   ))}
                 </div>
@@ -528,7 +528,7 @@ export default function Dashboard() {
                     materiais.filter(m => m.materia_id === materiaDetalhe.id).map(m => (
                       <div key={m.id} className="bg-white p-2 text-xs rounded border border-gray-200 shadow-sm flex justify-between items-center">
                         <span className="font-semibold text-gray-700 truncate w-3/4">{m.titulo}</span>
-                        <a href={`http://localhost:3000/${m.caminho_arquivo}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline font-bold">Abrir</a>
+                        <a href={`https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net/${m.caminho_arquivo}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline font-bold">Abrir</a>
                       </div>
                     ))
                   )}
