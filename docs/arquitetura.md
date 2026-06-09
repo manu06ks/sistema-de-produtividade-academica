@@ -15,17 +15,18 @@ O StudyX foi desenvolvido utilizando uma arquitetura **Cliente-Servidor** desaco
 
 ## 2. Fluxo de Módulos e Tecnologias
 
-A comunicação entre as camadas ocorre através de requisições HTTP utilizando formato JSON:
+[cite_start]A comunicação entre as camadas ocorre através de requisições HTTP utilizando formato JSON[cite: 10, 44]:
+
+```text
 [ Interface (Frontend) ]
-│  ▲
-│  │ Requisições HTTP (JSON)
-▼  │
-[ API REST (Backend) ]
-│  ▲
-│  │ Camada de Persistência (pg)
-▼  │
+         │ ▲
+         │ │ Requisições HTTP (JSON)
+         ▼ │
+[   API REST (Backend)  ]
+         │ ▲
+         │ │ Camada de Persistência (pg)
+         ▼ │
 [ Banco de Dados PostgreSQL ]
----
 
 ## 3. Segurança e Mecanismos Implementados
 
