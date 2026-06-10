@@ -18,7 +18,7 @@ export default function Login() {
     const payload = isLogin ? { email, senha } : { nome, email, senha };
 
     try {
-      const response = await fetch(`https://unistudy-andwgha6cbd8hran.eastus-01.azurewebsites.net${endpoint}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

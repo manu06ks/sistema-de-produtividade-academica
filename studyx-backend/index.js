@@ -186,11 +186,17 @@ app.put("/materias/:id", verificarToken, async (req, res) => {
 });
 
 // --- TAREFAS / KANBAN ---
-app.post("/tarefas", verificarToken, async (req, res) => {
+app.post("/tarefas", verificarToken, upload.single('arquivo'), async (req, res) => {
     const { materia_id, titulo, data_entrega, prioridade, descricao, tipo, conteudos } = req.body;
+    
+    // Se o usuário enviou um arquivo, pegamos os dados do multer, senão fica null
+    const nome_arquivo = req.file ? req.file.originalname : null;
+    const caminho_arquivo = req.file ? req.file.path : null;
+
     try {
         const client = await db.connect();
         
+        // Verificação de segurança da matéria
         const check = await client.query("SELECT id FROM materias WHERE id = $1 AND usuario_id = $2", [materia_id, req.usuario.id]);
         if (check.rows.length === 0) {
             client.release();
@@ -198,12 +204,28 @@ app.post("/tarefas", verificarToken, async (req, res) => {
         }
 
         const novaTarefa = await client.query(
-            "INSERT INTO tarefas (materia_id, titulo, data_entrega, status, prioridade, descricao, tipo, conteudos) VALUES ($1, $2, $3, 'pendente', $4, $5, $6, $7) RETURNING *",
-            [materia_id, titulo, data_entrega, prioridade, descricao, tipo, conteudos]
+            `INSERT INTO tarefas 
+                (materia_id, titulo, data_entrega, status, prioridade, descricao, tipo, conteudos, nome_arquivo, caminho_arquivo) 
+             VALUES 
+                ($1, $2, $3, 'pendente', $4, $5, $6, $7, $8, $9) 
+             RETURNING *`,
+            [
+                materia_id, 
+                titulo, 
+                data_entrega || null, 
+                prioridade || 'media', 
+                descricao || '', 
+                tipo || 'tarefa', 
+                tipo === 'prova' ? (conteudos || descricao) : null,
+                nome_arquivo,
+                caminho_arquivo
+            ]
         );
+        
         client.release();
         res.status(201).json(novaTarefa.rows[0]);
     } catch (error) {
+        console.error("Erro ao criar tarefa:", error);
         res.status(500).json({ erro: "Erro ao criar tarefa." });
     }
 });
@@ -224,6 +246,24 @@ app.get("/tarefas", verificarToken, async (req, res) => {
     }
 });
 
+// --- ROTA PARA ARQUIVAR TAREFAS CONCLUÍDAS ---
+app.put("/tarefas/arquivar-concluidas", verificarToken, async (req, res) => {
+    try {
+        const client = await db.connect();
+        await client.query(`
+            UPDATE tarefas SET status = 'arquivada' 
+            WHERE status = 'concluida' 
+            AND materia_id IN (SELECT id FROM materias WHERE usuario_id = $1)
+        `, [req.usuario.id]);
+        client.release();
+        res.json({ mensagem: "Tarefas arquivadas e ocultadas do quadro!" });
+    } catch (error) {
+        console.error("Erro ao arquivar:", error);
+        res.status(500).json({ erro: "Erro ao arquivar tarefas." });
+    }
+});
+
+// --- ROTA PARA ATUALIZAR STATUS ---
 app.put("/tarefas/:id/status", verificarToken, async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
@@ -234,25 +274,6 @@ app.put("/tarefas/:id/status", verificarToken, async (req, res) => {
         res.json({ mensagem: "Status atualizado!" });
     } catch (error) {
         res.status(500).json({ erro: "Erro ao mover tarefa." });
-    }
-});
-
-// --- ROTA PARA DELETAR MATÉRIA ---
-app.delete("/materias/:id", verificarToken, async (req, res) => {
-    const { id } = req.params;
-    try {
-        const client = await db.connect();
-        // O banco precisa deletar apenas se for do usuário autenticado
-        const resultado = await client.query("DELETE FROM materias WHERE id = $1 AND usuario_id = $2 RETURNING *", [id, req.usuario.id]);
-        client.release();
-        
-        if (resultado.rowCount === 0) {
-            return res.status(404).json({ erro: "Matéria não encontrada ou acesso negado." });
-        }
-        res.json({ mensagem: "Matéria deletada com sucesso!" });
-    } catch (error) {
-        console.error("Erro ao deletar matéria:", error);
-        res.status(500).json({ erro: "Falha ao deletar matéria." });
     }
 });
 
@@ -293,7 +314,7 @@ app.delete("/materias/:id", verificarToken, async (req, res) => {
     try {
         const client = await db.connect();
         
-        // 1. Verifica se a matéria existe e pertence à Emanuela
+        // 1. Verifica se a matéria existe e pertence ao usuario logado
         const check = await client.query("SELECT id FROM materias WHERE id = $1 AND usuario_id = $2", [id, req.usuario.id]);
         if (check.rowCount === 0) {
             client.release();
@@ -425,9 +446,51 @@ app.post("/sessoes-estudo", verificarToken, async (req, res) => {
     }
 });
 
-// ==========================================
-// 7. INICIALIZAÇÃO DO SERVIDOR
-// ==========================================
+// --- ESTATÍSTICAS / ANALYTICS ---
+app.get("/estatisticas", verificarToken, async (req, res) => {
+    try {
+        const client = await db.connect();
+
+        // 1. Soma o tempo gasto em cada Matéria (Para o Gráfico de Barras)
+        const tempoPorMateria = await client.query(`
+            SELECT 
+                m.nome as materia, 
+                m.cor, 
+                SUM(s.duracao_segundos) as total_segundos
+            FROM sessoes_estudo s
+            JOIN tarefas t ON s.tarefa_id = t.id
+            JOIN materias m ON t.materia_id = m.id
+            WHERE m.usuario_id = $1
+            GROUP BY m.nome, m.cor
+        `, [req.usuario.id]);
+
+        // 2. Soma o tempo gasto por Tipo: Prova vs Tarefa (Para o Gráfico de Pizza)
+        const tempoPorTipo = await client.query(`
+            SELECT 
+                t.tipo, 
+                SUM(s.duracao_segundos) as total_segundos
+            FROM sessoes_estudo s
+            JOIN tarefas t ON s.tarefa_id = t.id
+            JOIN materias m ON t.materia_id = m.id
+            WHERE m.usuario_id = $1
+            GROUP BY t.tipo
+        `, [req.usuario.id]);
+
+        client.release();
+
+        // Envia as duas respostas juntas para o Frontend
+        res.json({
+            porMateria: tempoPorMateria.rows,
+            porTipo: tempoPorTipo.rows
+        });
+
+    } catch (error) {
+        console.error("Erro ao buscar estatísticas:", error);
+        res.status(500).json({ erro: "Erro ao calcular o tempo de estudo." });
+    }
+});
+
+//INICIALIZAÇÃO DO SERVIDOR
 app.listen(port, () => {
     console.log(` Backend rodando na porta ${port}`);
 });
