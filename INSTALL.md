@@ -19,19 +19,21 @@ Antes de iniciar, certifique-se de ter as seguintes ferramentas instaladas em su
 
 O projeto está dividido em duas partes principais: `studyx-backend` e `studyx-frontend`. É necessário instalar as dependências de cada módulo separadamente.
 
-### 2.1. Configurando o Backend
+## 2.1. Configurando o Backend
+
 Abra o seu terminal na raiz do projeto e execute os seguintes comandos para acessar a pasta e instalar as bibliotecas de servidor:
+
 ```bash
 cd studyx-backend
 npm install
 cd ..
-### 2.2. Configurando o Frontend
-Depois de voltar para a pasta raiz com o comando anterior, execute os comandos abaixo para acessar a pasta do frontend e instalar as dependências da interface gráfica:
+```
+## 2.2. Configurando o Frontend
+Abra o seu terminal na raiz do projeto e execute os seguintes comandos para acessar a pasta do frontend e instalar as dependências:
 ```bash
 cd studyx-frontend
 npm install
----
-
+```
 ## 3. Configuração do Banco de Dados
 
 O StudyX utiliza o PostgreSQL como banco de dados. Siga os passos abaixo para configurá-lo localmente:
@@ -48,4 +50,5 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=studyx_db
 JWT_SECRET=sua_chave_secreta_jwt
+```
 
