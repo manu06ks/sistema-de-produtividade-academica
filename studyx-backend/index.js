@@ -7,8 +7,12 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 
 const app = express();
-app.use(cors());
 const port = process.env.PORT || 3000;
+app.use(cors({
+    origin: ['http://localhost:5173', 'https://o-link-do-seu-frontend-na-vercel.com'], // Adicione aqui os links que podem acessar a API
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
 
 // 2. MIDDLEWARES GERAIS
 app.use(express.json()); // Permite ler arquivos .json
