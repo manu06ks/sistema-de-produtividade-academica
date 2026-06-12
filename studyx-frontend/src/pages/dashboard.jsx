@@ -5,17 +5,10 @@ import {
   Users,
   BarChart3,
   LogOut,
-  Plus,
   X,
   Pencil,
   Trash2,
-  ArrowLeft,
-  Target,
-  CalendarDays,
   BookOpen,
-  User,
-  FileText,
-  AlertTriangle,
   ClipboardList,
 } from 'lucide-react';
 import SmartTimer from '../components/SmartTimer';
@@ -24,6 +17,7 @@ import Planners from '../components/Planners';
 import SubjectList from '../components/SubjectList';
 import Library from '../components/Library';
 import StudyAnalytics from '../components/StudyAnalytics';
+import Grupos from '../components/Grupos'; // Importando o novo componente de Grupos
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -36,18 +30,10 @@ export default function Dashboard() {
   const [materias, setMaterias] = useState([]);
   const [tarefas, setTarefas] = useState([]);
   const [materiais, setMaterials] = useState([]);
-  const [grupos, setGrupos] = useState([]);
-  const [eventosGrupo, setEventosGrupo] = useState([]);
-
-  // --- CONTROLE DE NAVEGAÇÃO INTERNA DOS GRUPOS ---
-  const [grupoAtivo, setGrupoAtivo] = useState(null);
 
   // --- ESTADOS DE MODAIS E FORMULÁRIOS ---
   const [isModalMateriaOpen, setIsModalMateriaOpen] = useState(false);
   const [isModalDocumentoOpen, setIsModalDocumentoOpen] = useState(false);
-  const [isModalCriarGrupoOpen, setIsModalCriarGrupoOpen] = useState(false);
-  const [isModalEntrarGrupoOpen, setIsModalEntrarGrupoOpen] = useState(false);
-  const [isModalSugerirEventoOpen, setIsModalSugerirEventoOpen] = useState(false);
   const [editandoMateriaId, setEditandoMateriaId] = useState(null);
   const [materiaDetalhe, setMateriaDetalhe] = useState(null);
   const [tarefaEditando, setTarefaEditando] = useState(null);
@@ -65,16 +51,6 @@ export default function Dashboard() {
   const [tipoItem, setTipoItem] = useState('tarefa');
   const [descTarefa, setDescTarefa] = useState('');
 
-  const [nomeGrupo, setNomeGrupo] = useState('');
-  const [descGrupo, setDescGrupo] = useState('');
-  const [senhaGrupo, setSenhaGrupo] = useState('');
-  const [codigoConviteGrupo, setCodigoConviteGrupo] = useState('');
-
-  //EVENTOS GRUPO
-  const [tituloEvento, setTituloEvento] = useState('');
-  const [dataEvento, setDataEvento] = useState('');
-  const [tipoEvento, setTipoEvento] = useState('prova');
-
   // --- REQUISIÇÕES INICIAIS ---
   useEffect(() => {
     if (!token) { navigate('/'); return; }
@@ -87,7 +63,6 @@ export default function Dashboard() {
     await carregarMaterias();
     await carregarTarefas();
     await carregarBiblioteca();
-    await carregarGrupos();
   };
 
   const carregarMaterias = async () => {
@@ -103,47 +78,6 @@ export default function Dashboard() {
   const carregarBiblioteca = async () => {
     try { const res = await fetch(`${import.meta.env.VITE_API_URL}/materiais`, { headers }); setMaterials(await res.json()); }
     catch (e) { console.error(e); }
-  };
-
-  const carregarGrupos = async () => {
-    try { const res = await fetch(`${import.meta.env.VITE_API_URL}/grupos/meus`, { headers }); setGrupos(await res.json()); }
-    catch (e) { console.error(e); }
-  };
-
-  // --- REQUISIÇÕES DOS EVENTOS DO GRUPO ---
-  const carregarEventosGrupo = async (grupoId) => {
-    try { const res = await fetch(`${import.meta.env.VITE_API_URL}/grupos/${grupoId}/eventos`, { headers });
-      if (res.ok) setEventosGrupo(await res.json());}
-      catch (e) { console.error("Erro ao carregar eventos:", e); }
-  };
-
-  const submitSugerirEvento = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/grupos/${grupoAtivo.id}/eventos`, {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titulo: tituloEvento, tipo: tipoEvento, data_evento: dataEvento })
-      });
-      if (res.ok) {
-        setIsModalSugerirEventoOpen(false);
-        setTituloEvento(''); setDataEvento(''); setTipoEvento('prova');
-        carregarEventosGrupo(grupoAtivo.id); // Recarrega os eventos da tela
-      }
-    } catch (error) { console.error("Erro ao sugerir evento:", error); }
-  };
-
-  const responderEvento = async (eventoId, resposta) => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/grupos/${grupoAtivo.id}/eventos/${eventoId}/responder`, {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resposta }) // 'aceito' ou 'ignorado'
-      });
-      if (res.ok) {
-        carregarEventosGrupo(grupoAtivo.id); // Recarrega os eventos para atualizar o visual do botão
-      }
-    } catch (error) { console.error("Erro ao responder ao evento:", error); }
   };
 
   // --- FUNÇÕES DE SUBMIT E DELETE (MODAIS) ---
@@ -179,43 +113,6 @@ export default function Dashboard() {
     setTituloUpload(''); setMateriaUpload(''); carregarBiblioteca(); setIsModalDocumentoOpen(false);
   };
 
-  const submitCriarGrupo = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/grupos`, {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: nomeGrupo, descricao: descGrupo, senha: senhaGrupo })
-      });
-      if(res.ok) {
-        setIsModalCriarGrupoOpen(false);
-        setNomeGrupo(''); setDescGrupo(''); setSenhaGrupo('');
-        carregarGrupos();
-      }
-    } catch (error) { console.error("Erro ao criar grupo:", error); }
-  };
-
-  // ENTRAR NO GRUPO
-  const submitEntrarGrupo = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/grupos/entrar`, {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codigo_convite: codigoConviteGrupo, senha: senhaGrupo })
-      });
-
-      if(res.ok) {
-        setIsModalEntrarGrupoOpen(false);
-        setCodigoConviteGrupo(''); setSenhaGrupo('');
-        carregarGrupos();
-      } else {
-        const erro = await res.json();
-        alert(erro.erro || "Falha ao entrar no grupo. Verifique o código e a senha.");
-      }
-    } catch (error) { console.error("Erro ao entrar no grupo:", error); }
-  };
-
   // --- CONTROLE DE MODAIS ---
   const abrirModalNovaMateria = () => { setNomeMateria(''); setProfMateria(''); setEditandoMateriaId(null); setIsModalMateriaOpen(true); };
   const abrirModalEditarMateria = (m) => { setNomeMateria(m.nome); setProfMateria(m.professor || ''); setCorMateria(m.cor || '#c175e7'); setEditandoMateriaId(m.id); setIsModalMateriaOpen(true); };
@@ -230,16 +127,13 @@ export default function Dashboard() {
 
   const fazerLogout = () => { localStorage.removeItem('studyx_token'); navigate('/'); };
 
-  // --- CONSTANTES DE ESTILO (mapeadas para o design system Tailwind v4) ---
-  // Mantidas para compatibilidade com os componentes-filho que ainda as recebem por props.
+  // --- CONSTANTES DE ESTILO ---
   const roxoPrincipal = "#7c3aed";
   const fundoInput = "#f5f3ff";
   const fundoBotaoModal = "#ede9fe";
   const cardClass = "bg-card border border-border/50 rounded-2xl shadow-sm p-4";
   const inputClass = "w-full p-3.5 mb-4 rounded-xl bg-input/50 border border-border/60 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all font-medium placeholder:text-muted-foreground";
   const circleBtnClass = "w-[70px] h-[70px] rounded-2xl bg-secondary border border-border/60 flex items-center justify-center text-center text-[9px] font-bold leading-tight cursor-pointer hover:bg-accent hover:border-primary/30 transition-all flex-shrink-0 shadow-sm text-secondary-foreground";
-
-  // Classe base reutilizável para os modais
   const modalCardClass = "bg-card border border-border/50 rounded-3xl p-8 w-full max-w-md relative shadow-xl";
 
   return (
@@ -278,7 +172,6 @@ export default function Dashboard() {
 
         {/* RENDERIZAÇÃO CONDICIONAL DA PÁGINA */}
         {telaAtiva === 'dashboard' && (
-          /* TELA 1: DASHBOARD GERAL */
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <aside className="lg:col-span-1 space-y-6">
               <SmartTimer tarefas={tarefas} token={token} roxoPrincipal={roxoPrincipal} fundoInput={fundoInput} fundoBotaoModal={fundoBotaoModal} />
@@ -294,129 +187,16 @@ export default function Dashboard() {
         )}
 
         {telaAtiva === 'analytics' && (
-          /* TELA 2: PÁGINA EXCLUSIVA DE ANALYTICS */
           <StudyAnalytics token={token} cardClass={cardClass} />
         )}
 
         {telaAtiva === 'grupos' && (
-          /* TELA 3: PÁGINA DE GRUPOS DE ESTUDO */
-          <div className="max-w-4xl mx-auto space-y-6">
-            {!grupoAtivo ? (
-              <>
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
-                   <h2 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2.5"><Users className="h-7 w-7 text-primary" /> Meus Grupos</h2>
-                   <div className="flex gap-3 w-full sm:w-auto">
-                     <button onClick={() => setIsModalCriarGrupoOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-secondary text-secondary-foreground font-semibold py-2.5 px-6 rounded-xl hover:bg-accent transition-all text-sm border border-border/50">
-                       <Plus className="h-4 w-4" /> Criar Grupo
-                     </button>
-                     <button onClick={() => setIsModalEntrarGrupoOpen(true)} className="flex-1 sm:flex-none bg-primary text-primary-foreground font-semibold py-2.5 px-6 rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all text-sm shadow-sm">Entrar com Código</button>
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {grupos.length === 0 ? (
-                      <p className="text-muted-foreground col-span-3 text-center mt-10">Você ainda não participa de nenhum grupo.</p>
-                    ) : (
-                      grupos.map(g => (
-                        <div
-                          key={g.id}
-                          onClick={() => { setGrupoAtivo(g); carregarEventosGrupo(g.id); }} // BATE NA API AO CLICAR
-                          className="bg-card border border-border/50 border-l-4 border-l-primary rounded-2xl shadow-sm p-4 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px] transform hover:-translate-y-1"
-                        >
-                           <div>
-                             <h3 className="font-bold text-lg text-foreground mb-1">{g.nome}</h3>
-                             <p className="text-xs text-muted-foreground line-clamp-2">{g.descricao}</p>
-                           </div>
-                           <div className="flex justify-between items-center mt-4 pt-3 border-t border-border/50">
-                             <span className="text-[10px] font-bold text-primary bg-accent px-2 py-1 rounded-md">{g.papel}</span>
-                             <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1"><User className="h-3 w-3" /> {g.total_membros} {g.total_membros === '1' ? 'membro' : 'membros'}</span>
-                           </div>
-                        </div>
-                      ))
-                    )}
-                </div>
-              </>
-            ) : (
-              <div className="animate-fade-in">
-                <button onClick={() => { setGrupoAtivo(null); setEventosGrupo([]); }} className="mb-4 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"><ArrowLeft className="h-4 w-4" /> Voltar para todos os grupos</button>
-
-                <div className="bg-card border border-border/50 border-t-4 border-t-primary rounded-3xl p-6 md:p-8 shadow-sm mb-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h2 className="text-3xl font-bold tracking-tight text-foreground">{grupoAtivo.nome}</h2>
-                  </div>
-                  <p className="text-muted-foreground mb-4">{grupoAtivo.descricao || 'Nenhuma descrição fornecida.'}</p>
-
-                  {/* DESAFIO DA SEMANA */}
-                  <div className="bg-accent/60 border border-primary/20 rounded-2xl p-4 mb-6">
-                    <div className="flex justify-between items-end mb-2">
-                      <div>
-                        <h4 className="text-sm font-bold text-primary flex items-center gap-1.5"><Target className="h-4 w-4" /> Desafio da Semana</h4>
-                        <p className="text-xs text-muted-foreground font-medium mt-0.5">O grupo inteiro deve estudar 20h no total.</p>
-                      </div>
-                      <span className="text-xs font-bold text-foreground">12h / 20h</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2.5">
-                      <div className="bg-primary h-2.5 rounded-full w-3/5"></div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 border-b border-border/50 pb-2">
-                    <button className="font-semibold text-sm text-primary border-b-2 border-primary pb-2 flex items-center gap-1.5"><CalendarDays className="h-4 w-4" /> Eventos & Provas</button>
-                    <button className="font-semibold text-sm text-muted-foreground hover:text-foreground pb-2 flex items-center gap-1.5"><BookOpen className="h-4 w-4" /> Materiais (Em breve)</button>
-                    <button className="font-semibold text-sm text-muted-foreground hover:text-foreground pb-2 flex items-center gap-1.5"><User className="h-4 w-4" /> Membros (Em breve)</button>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold tracking-tight text-foreground">Sugestões de Datas</h3>
-                  {['criador', 'moderador'].includes(grupoAtivo.papel) && (
-                    <button onClick={() => setIsModalSugerirEventoOpen(true)} className="flex items-center gap-1.5 bg-primary text-primary-foreground font-semibold py-2 px-4 rounded-xl text-xs shadow-sm hover:bg-primary/90 active:scale-[0.98] transition-all">
-                      <Plus className="h-3.5 w-3.5" /> Sugerir Evento
-                    </button>
-                  )}
-                </div>
-
-
-                </div>
-            )}
-          </div>
+          /* O novo componente importado está fazendo todo o trabalho aqui agora! */
+          <Grupos token={token} />
         )}
       </div>
 
-
-      {/* --- MODAIS DE GRUPOS --- */}
-      {/* --- CRIAR GRUPO --- */}
-      {isModalCriarGrupoOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className={modalCardClass}>
-            <button onClick={() => { setIsModalCriarGrupoOpen(false); setNomeGrupo(''); setDescGrupo(''); setSenhaGrupo(''); }} className="absolute top-4 right-5 text-muted-foreground hover:text-foreground transition-colors"><X className="h-5 w-5" /></button>
-            <h2 className="text-2xl font-bold tracking-tight mb-6 text-center text-foreground">Criar Novo Grupo</h2>
-            <form onSubmit={submitCriarGrupo} className="flex flex-col gap-2">
-              <input type="text" placeholder="Nome do Grupo" required value={nomeGrupo} onChange={e => setNomeGrupo(e.target.value)} className={inputClass} />
-              <input type="text" placeholder="Descrição (Opcional)" value={descGrupo} onChange={e => setDescGrupo(e.target.value)} className={inputClass} />
-              <input type="password" placeholder="Senha para membros entrarem" required value={senhaGrupo} onChange={e => setSenhaGrupo(e.target.value)} className={inputClass} />
-              <button type="submit" className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-xl mt-2 hover:bg-primary/90 active:scale-[0.99] transition-all">Criar Grupo</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- ENTRAR EM GRUPO --- */}
-      {isModalEntrarGrupoOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className={modalCardClass}>
-            <button onClick={() => { setIsModalEntrarGrupoOpen(false); setCodigoConviteGrupo(''); setSenhaGrupo(''); }} className="absolute top-4 right-5 text-muted-foreground hover:text-foreground transition-colors"><X className="h-5 w-5" /></button>
-            <h2 className="text-2xl font-bold tracking-tight mb-6 text-center text-foreground">Entrar em um Grupo</h2>
-            <form onSubmit={submitEntrarGrupo} className="flex flex-col gap-2">
-              <input type="text" placeholder="Código de Convite (Ex: AB12CD)" required value={codigoConviteGrupo} onChange={e => setCodigoConviteGrupo(e.target.value.toUpperCase())} className={`${inputClass} uppercase tracking-widest text-center`} maxLength="6" />
-              <input type="password" placeholder="Senha do Grupo" required value={senhaGrupo} onChange={e => setSenhaGrupo(e.target.value)} className={inputClass} />
-              <button type="submit" className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-xl mt-2 hover:bg-primary/90 active:scale-[0.99] transition-all">Entrar</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL DE DISCIPLINA --- */}
+      {/* --- MODAIS PRINCIPAIS (Matéria, Tarefa e Documento) --- */}
       {isModalMateriaOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className={modalCardClass}>
@@ -432,7 +212,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* --- MODAL DE UPLOAD DE ARQUIVO --- */}
       {isModalDocumentoOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className={modalCardClass}>
@@ -448,7 +227,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* --- MODAL DE DETALHES DA MATÉRIA --- */}
       {materiaDetalhe && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className="bg-card border border-border/50 rounded-3xl p-8 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto shadow-xl">
@@ -504,7 +282,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* --- MODAL DE EDIÇÃO DE TAREFA --- */}
       {tarefaEditando && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className={modalCardClass}>
