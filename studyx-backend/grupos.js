@@ -138,81 +138,76 @@ router.delete('/:id/sair', async (req, res) => {
   }
 });
 
-
-router.post('/:id/eventos', async (req, res) => {
-  const { id } = req.params; // ID do grupo
-  const criador_id = req.usuario.id;
-  const { titulo, tipo, data_evento, descricao, hora_evento } = req.body;
-
-  try {
-    // 1. Verifica se o usuário é do grupo e tem permissão (criador ou moderador)
-    const membro = await db.query(
-      "SELECT papel FROM grupo_membros WHERE grupo_id = $1 AND usuario_id = $2",
-      [id, criador_id]
-    );
-
-    if (membro.rows.length === 0 || membro.rows[0].papel === 'membro') {
-      return res.status(403).json({ erro: 'Apenas moderadores podem sugerir eventos.' });
-    }
-
-    // 2. Cria o evento
-    const result = await db.query(
-      `INSERT INTO grupo_eventos (grupo_id, criador_id, titulo, tipo, data_evento, descricao, hora_evento)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [id, criador_id, titulo, tipo, data_evento, descricao || '', hora_evento || null]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ erro: 'Erro ao criar evento.' });
-  }
-});
-
-// GET /grupos/:id/eventos — Lista os eventos e verifica se eu já votei
-router.get('/:id/eventos', async (req, res) => {
+// GET /grupos/:id/stats/membros — Ranking de horas por membro
+router.get('/:id/stats/membros', async (req, res) => {
   const { id } = req.params;
   const usuario_id = req.usuario.id;
 
   try {
-    // Essa query busca os eventos e já faz um JOIN para descobrir se o aluno logado já votou
-    const result = await db.query(`
-      SELECT e.*, 
-             r.resposta AS meu_voto
-      FROM grupo_eventos e
-      LEFT JOIN grupo_eventos_respostas r 
-             ON e.id = r.evento_id AND r.usuario_id = $2
-      WHERE e.grupo_id = $1 AND e.removido_em IS NULL
-      ORDER BY e.data_evento ASC
-    `, [id, usuario_id]);
+    //  Verifica se quem está pedindo é membro do grupo (Privacidade) 
+    const membro = await db.query(
+      'SELECT id FROM grupo_membros WHERE grupo_id = $1 AND usuario_id = $2',
+      [id, usuario_id]
+    );
+    
+    if (membro.rows.length === 0) {
+      return res.status(403).json({ erro: 'Acesso negado. Você não está neste grupo.' });
+    }
 
-    res.json(result.rows);
+    // Calcula as horas contando APENAS o que foi estudado DEPOIS de entrar no grupo
+    // Cruzamos a tabela de sessões com o momento que o aluno entrou no grupo 
+    const ranking = await db.query(`
+        SELECT 
+        u.id, 
+        u.nome,
+        COALESCE(SUM(se.duracao_segundos), 0) AS total_segundos
+        FROM grupo_membros gm
+        JOIN usuarios u ON gm.usuario_id = u.id
+        LEFT JOIN sessoes_estudo se 
+                ON se.usuario_id = u.id 
+            AND se.criado_em >= gm.entrou_em
+        WHERE gm.grupo_id = $1
+        GROUP BY u.id, u.nome
+        ORDER BY total_segundos DESC
+        `, [id]);
+
+    res.json(ranking.rows);
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ erro: 'Erro ao buscar eventos.' });
+    console.error("Erro ao buscar horas dos membros:", e);
+    res.status(500).json({ erro: 'Erro ao calcular ranking do grupo.' });
   }
 });
 
-// POST /grupos/:id/eventos/:eid/responder — Aluno clica em Aceitar ou Recusar
-router.post('/:id/eventos/:eid/responder', async (req, res) => {
-  const { eid } = req.params; // ID do evento
-  const usuario_id = req.usuario.id;
-  const { resposta } = req.body; // 'aceito' ou 'ignorado'
-
+router.get('/:id/membros/status', async (req, res) => {
+  const { id } = req.params;
+  
   try {
-    // O comando "ON CONFLICT" faz um "Upsert": se o aluno já tinha votado, ele apenas atualiza o voto!
-    const result = await db.query(`
-      INSERT INTO grupo_eventos_respostas (evento_id, usuario_id, resposta)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (evento_id, usuario_id) 
-      DO UPDATE SET resposta = EXCLUDED.resposta, respondido_em = NOW()
-      RETURNING *
-    `, [eid, usuario_id, resposta]);
-
-    res.json(result.rows[0]);
+    // Busca os membros que estão com timer ativo no banco
+    const status = await db.query(`
+      SELECT usuario_id, timer_ativo, materia_atual 
+      FROM grupo_membros 
+      WHERE grupo_id = $1 AND timer_ativo = TRUE
+    `, [id]);
+    
+    res.json(status.rows);
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ erro: 'Erro ao registrar resposta.' });
+    res.status(500).json({ erro: 'Erro ao buscar status dos membros.' });
+  }
+});
+
+router.get('/:id/membros/status', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const status = await db.query(`
+      SELECT usuario_id 
+      FROM grupo_membros 
+      WHERE grupo_id = $1 AND timer_ativo = TRUE
+    `, [id]);
+    
+    res.json(status.rows);
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro ao buscar status dos membros.' });
   }
 });
 

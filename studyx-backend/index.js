@@ -446,8 +446,8 @@ app.post("/sessoes-estudo", verificarToken, async (req, res) => {
         // CORRIGIDO: Retirado o .db duplicado
         const client = await db.connect();
         const novaSessao = await client.query(
-            "INSERT INTO sessoes_estudo (tarefa_id, duracao_segundos) VALUES ($1, $2) RETURNING *",
-            [tarefa_id, duracao_segundos]
+            "INSERT INTO sessoes_estudo (tarefa_id, usuario_id, duracao_segundos) VALUES ($1, $2, $3) RETURNING *",
+            [tarefa_id, req.usuario.id, duracao_segundos]
         );
         client.release();
         res.status(201).json(novaSessao.rows[0]);
