@@ -15,7 +15,7 @@ O StudyX foi desenvolvido utilizando uma arquitetura **Cliente-Servidor** desaco
 
 ## 2. Fluxo de Módulos e Tecnologias
 
-[cite_start]A comunicação entre as camadas ocorre através de requisições HTTP utilizando formato JSON[cite: 10, 44]:
+A comunicação entre as camadas ocorre através de requisições HTTP utilizando formato JSON:
 
 ```text
 [ Interface (Frontend) ]
