@@ -5,6 +5,7 @@ const db = require("./db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
+const gruposRouter = require("./grupos");
 
 const app = express();
 app.use(cors());
@@ -117,6 +118,11 @@ app.post("/login", async (req, res) => {
 });
 
 // ROTAS PROTEGIDAS (exigem Token)
+
+// --- GRUPOS DE ESTUDO ---
+// Conecta o roteador de grupo
+app.use("/grupos", verificarToken, gruposRouter);
+
 // Painel de boas-vindas
 app.get("/dados-painel", verificarToken, async (req, res) => {
     try {
@@ -445,6 +451,9 @@ app.post("/sessoes-estudo", verificarToken, async (req, res) => {
         res.status(500).json({ erro: "Erro ao salvar sessão de estudo." });
     }
 });
+
+
+
 
 // --- ESTATÍSTICAS / ANALYTICS ---
 app.get("/estatisticas", verificarToken, async (req, res) => {
