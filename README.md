@@ -1,6 +1,6 @@
-# StudyX - Ecossistema Integrado de Produtividade Acadêmica
+# Unistudy - Ecossistema Integrado de Produtividade Acadêmica
 
-O **StudyX** é uma solução definitiva desenvolvida para mitigar a sobrecarga mental acadêmica. Através de uma plataforma web minimalista, o ecossistema integra gestão de tarefas, armazenamento e tempo focado em um único lugar.
+O **Unistudy** é uma solução definitiva desenvolvida para mitigar a sobrecarga mental acadêmica. Através de uma plataforma web minimalista, o ecossistema integra gestão de tarefas, armazenamento e tempo focado em um único lugar.
 
 ---
 
