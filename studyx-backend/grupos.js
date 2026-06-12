@@ -216,4 +216,44 @@ router.post('/:id/eventos/:eid/responder', async (req, res) => {
   }
 });
 
+// GET /grupos/:id/stats/membros — Ranking de horas por membro (Apenas pós-entrada)
+router.get('/:id/stats/membros', async (req, res) => {
+  const { id } = req.params;
+  const usuario_id = req.usuario.id;
+
+  try {
+    //  Verifica se quem está pedindo é membro do grupo (Privacidade) [cite: 31]
+    const membro = await db.query(
+      'SELECT id FROM grupo_membros WHERE grupo_id = $1 AND usuario_id = $2',
+      [id, usuario_id]
+    );
+    
+    if (membro.rows.length === 0) {
+      return res.status(403).json({ erro: 'Acesso negado. Você não está neste grupo.' });
+    }
+
+    // Calcula as horas contando APENAS o que foi estudado DEPOIS de entrar no grupo
+    // Cruzamos a tabela de sessões com o momento que o aluno entrou no grupo [cite: 41, 42]
+    const ranking = await db.query(`
+        SELECT 
+        u.id, 
+        u.nome,
+        COALESCE(SUM(se.duracao_segundos), 0) AS total_segundos
+        FROM grupo_membros gm
+        JOIN usuarios u ON gm.usuario_id = u.id
+        LEFT JOIN sessoes_estudo se 
+                ON se.usuario_id = u.id 
+            AND se.criado_em >= gm.entrou_em
+        WHERE gm.grupo_id = $1
+        GROUP BY u.id, u.nome
+        ORDER BY total_segundos DESC
+        `, [id]);
+
+    res.json(ranking.rows);
+  } catch (e) {
+    console.error("Erro ao buscar horas dos membros:", e);
+    res.status(500).json({ erro: 'Erro ao calcular ranking do grupo.' });
+  }
+});
+
 module.exports = router;
