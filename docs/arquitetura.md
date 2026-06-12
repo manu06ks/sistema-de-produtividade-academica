@@ -4,7 +4,7 @@ Este documento detalha a estrutura arquitetural do ecossistema **StudyX**, expli
 
 ---
 
-## 1. Modelo Arquitetural (Cliente-Servidor / REST API)
+## 1. Estrutura do Sistema (Cliente-Servidor / REST API)
 
 O StudyX foi desenvolvido utilizando uma arquitetura **Cliente-Servidor** desacoplada, dividida em duas camadas independentes:
 
