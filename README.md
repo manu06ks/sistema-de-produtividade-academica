@@ -39,26 +39,26 @@ desperdiçado na alternância de ferramentas que quebra a concentração.
 ## 🛠️ Ambiente de Desenvolvimento
 
 Para o desenvolvimento deste projeto, a equipe utilizou as seguintes ferramentas e configurações:
-* [cite_start]**Sistema Operacional:** Windows 11 (via PowerShell) [cite: 12]
-* [cite_start]**IDE:** Visual Studio Code (VSCode) [cite: 14]
-* [cite_start]**Ambiente de Execução:** Node.js v24.16.0 (LTS) [cite: 13, 18]
+* **Sistema Operacional:** Windows 11 (via PowerShell)
+* **IDE:** Visual Studio Code (VSCode)
+* **Ambiente de Execução:** Node.js v24.16.0 (LTS)
 
 ---
 
 ## 📦 Dependências e Tecnologias
 
-[cite_start]Abaixo estão listadas as principais bibliotecas utilizadas no ecossistema: [cite: 16, 17]
+Abaixo estão listadas as principais bibliotecas utilizadas no ecossistema:
 
 ### Backend (`studyx-backend`)
-* [cite_start]**Express:** Framework web para gerenciamento de rotas e middlewares. [cite: 17, 18]
-* [cite_start]**pg (node-postgres):** Cliente para conexão ao banco de dados PostgreSQL. [cite: 17]
-* [cite_start]**bcrypt:** Biblioteca para criptografia e hashing de senhas. [cite: 17]
-* [cite_start]**jsonwebtoken (JWT):** Implementação de tokens para autenticação. [cite: 17]
-* [cite_start]**multer:** Middleware para tratamento de uploads de arquivos. [cite: 17]
+* **Express:** Framework web para gerenciamento de rotas e middlewares.
+* **pg (node-postgres):** Cliente para conexão ao banco de dados PostgreSQL.
+* **bcrypt:** Biblioteca para criptografia e hashing de senhas.
+* **jsonwebtoken (JWT):** Implementação de tokens para autenticação.
+* **multer:** Middleware para tratamento de uploads de arquivos.
 
 ### Frontend (`studyx-frontend`)
-* [cite_start]**React.js:** Biblioteca base para a construção da interface. [cite: 17, 18]
-* [cite_start]**Tailwind CSS:** Framework utilitário para estilização e design. [cite: 17]
+* **React.js:** Biblioteca base para a construção da interface.
+* **Tailwind CSS:** Framework utilitário para estilização e design.
 
 ---
 
