@@ -138,76 +138,39 @@ router.delete('/:id/sair', async (req, res) => {
   }
 });
 
-// GET /grupos/:id/stats/membros — Ranking de horas por membro
+// GET /:id/stats/membros — Ranking de horas por membro
 router.get('/:id/stats/membros', async (req, res) => {
   const { id } = req.params;
-  const usuario_id = req.usuario.id;
+  const { periodo } = req.query; 
+
+  let dataFiltro = new Date();
+  if (periodo === 'diario') {
+    dataFiltro.setHours(0, 0, 0, 0); 
+  } else if (periodo === 'semanal') {
+    dataFiltro.setDate(dataFiltro.getDate() - 7); 
+  } else if (periodo === 'mensal') {
+    dataFiltro.setDate(dataFiltro.getDate() - 30); 
+  }
 
   try {
-    //  Verifica se quem está pedindo é membro do grupo (Privacidade) 
-    const membro = await db.query(
-      'SELECT id FROM grupo_membros WHERE grupo_id = $1 AND usuario_id = $2',
-      [id, usuario_id]
-    );
+    // ::int garante que o Javascript entenda o número.
+    // Troquei para s.criado_em (verifique se na sua tabela sessoes_estudo o nome é esse mesmo)
+    const query = `
+      SELECT u.id, u.nome, u.esta_estudando, COALESCE(SUM(s.duracao_segundos), 0)::int AS total_segundos
+      FROM usuarios u
+      JOIN grupo_membros gm ON u.id = gm.usuario_id
+      LEFT JOIN sessoes_estudo s ON u.id = s.usuario_id AND s.criado_em >= $1
+      WHERE gm.grupo_id = $2
+      GROUP BY u.id, u.nome, u.esta_estudando
+      ORDER BY total_segundos DESC, u.nome ASC
+    `;
     
-    if (membro.rows.length === 0) {
-      return res.status(403).json({ erro: 'Acesso negado. Você não está neste grupo.' });
-    }
-
-    // Calcula as horas contando APENAS o que foi estudado DEPOIS de entrar no grupo
-    // Cruzamos a tabela de sessões com o momento que o aluno entrou no grupo 
-    const ranking = await db.query(`
-        SELECT 
-        u.id, 
-        u.nome,
-        COALESCE(SUM(se.duracao_segundos), 0) AS total_segundos
-        FROM grupo_membros gm
-        JOIN usuarios u ON gm.usuario_id = u.id
-        LEFT JOIN sessoes_estudo se 
-                ON se.usuario_id = u.id 
-            AND se.criado_em >= gm.entrou_em
-        WHERE gm.grupo_id = $1
-        GROUP BY u.id, u.nome
-        ORDER BY total_segundos DESC
-        `, [id]);
-
+    const ranking = await db.query(query, [dataFiltro, id]);
     res.json(ranking.rows);
-  } catch (e) {
-    console.error("Erro ao buscar horas dos membros:", e);
-    res.status(500).json({ erro: 'Erro ao calcular ranking do grupo.' });
-  }
-});
 
-router.get('/:id/membros/status', async (req, res) => {
-  const { id } = req.params;
-  
-  try {
-    // Busca os membros que estão com timer ativo no banco
-    const status = await db.query(`
-      SELECT usuario_id, timer_ativo, materia_atual 
-      FROM grupo_membros 
-      WHERE grupo_id = $1 AND timer_ativo = TRUE
-    `, [id]);
-    
-    res.json(status.rows);
-  } catch (e) {
-    res.status(500).json({ erro: 'Erro ao buscar status dos membros.' });
-  }
-});
-
-router.get('/:id/membros/status', async (req, res) => {
-  const { id } = req.params;
-  
-  try {
-    const status = await db.query(`
-      SELECT usuario_id 
-      FROM grupo_membros 
-      WHERE grupo_id = $1 AND timer_ativo = TRUE
-    `, [id]);
-    
-    res.json(status.rows);
-  } catch (e) {
-    res.status(500).json({ erro: 'Erro ao buscar status dos membros.' });
+  } catch (erro) {
+    console.error("ERRO NO RANKING SQL:", erro); // Olhe o terminal do Node se a tela ficar vazia de novo!
+    res.status(500).json({ erro: 'Erro ao buscar ranking' });
   }
 });
 

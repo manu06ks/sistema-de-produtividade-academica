@@ -43,7 +43,6 @@ function verificarToken(req, res, next) {
     }
 
     try {
-        // CORRIGIDO: Adicionado o jwt.
         const usuarioDecodificado = jwt.verify(token, process.env.JWT_SECRET);
         req.usuario = usuarioDecodificado; // Pendura os dados na requisição
         next(); // Manda o Express seguir em frente
@@ -56,7 +55,7 @@ function verificarToken(req, res, next) {
 
 // Rota de Health Check (Checagem de Saúde)
 app.get("/", (req, res) => {
-    res.json({ status: "API do StudyX rodando perfeitamente!" });
+    res.json({ status: "API do UniStudy rodando perfeitamente!" });
 });
 
 // Cadastro de novos usuários
@@ -71,7 +70,6 @@ app.post("/cadastro", async (req, res) => {
             return res.status(400).json({ erro: "Este e-mail já está em uso!" });
         }
 
-        // CORRIGIDO: Adicionado o bcrypt.
         const salt = await bcrypt.genSalt(10);
         const senhaCriptografada = await bcrypt.hash(senha, salt);
 
@@ -101,13 +99,11 @@ app.post("/login", async (req, res) => {
             return res.status(401).json({ erro: "E-mail ou senha incorretos" });
         }
 
-        // CORRIGIDO: Adicionado o bcrypt.
         const senhaValida = await bcrypt.compare(senha, usuario.senha);
         if (!senhaValida) {
             return res.status(401).json({ erro: "E-mail ou senha incorretos" });
         }
 
-        // CORRIGIDO: Adicionado o jwt.
         const token = jwt.sign(
             { id: usuario.id, nome: usuario.nome },
             process.env.JWT_SECRET,
@@ -131,7 +127,7 @@ app.use("/grupos", verificarToken, gruposRouter);
 app.get("/dados-painel", verificarToken, async (req, res) => {
     try {
         res.json({ 
-            mensagem: `Bem-vinda de volta ao StudyX, ${req.usuario.nome}!`,
+            mensagem: `Bem-vinda de volta ao UniStudy, ${req.usuario.nome}!`,
             info: "Aqui ficarão as suas matérias e tarefas em breve."
         });
     } catch (error) {
@@ -202,6 +198,7 @@ app.post("/tarefas", verificarToken, upload.single('arquivo'), async (req, res) 
     // Se o usuário enviou um arquivo, pegamos os dados do multer, senão fica null
     const nome_arquivo = req.file ? req.file.originalname : null;
     const caminho_arquivo = req.file ? req.file.path : null;
+    const tipo_arquivo = req.file ? req.file.mimetype : null; // Pegamos o mime type para a biblioteca
 
     try {
         const client = await db.connect();
@@ -213,6 +210,7 @@ app.post("/tarefas", verificarToken, upload.single('arquivo'), async (req, res) 
             return res.status(403).json({ erro: "Acesso negado à matéria." });
         }
 
+        // 1. Insere a Tarefa
         const novaTarefa = await client.query(
             `INSERT INTO tarefas 
                 (materia_id, titulo, data_entrega, status, prioridade, descricao, tipo, conteudos, nome_arquivo, caminho_arquivo) 
@@ -232,6 +230,22 @@ app.post("/tarefas", verificarToken, upload.single('arquivo'), async (req, res) 
             ]
         );
         
+        // 2. A MÁGICA: Se houver um anexo, vincula automaticamente na Biblioteca Digital da Matéria
+        if (caminho_arquivo) {
+            await client.query(
+                `INSERT INTO materiais (usuario_id, materia_id, titulo, nome_arquivo, caminho_arquivo, tipo_arquivo) 
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [
+                    req.usuario.id, 
+                    materia_id, 
+                    `Anexo: ${titulo}`, 
+                    nome_arquivo, 
+                    caminho_arquivo, 
+                    tipo_arquivo
+                ]
+            );
+        }
+
         client.release();
         res.status(201).json(novaTarefa.rows[0]);
     } catch (error) {
@@ -443,7 +457,6 @@ app.get("/materiais", verificarToken, async (req, res) => {
 app.post("/sessoes-estudo", verificarToken, async (req, res) => {
     const { tarefa_id, duracao_segundos } = req.body;
     try {
-        // CORRIGIDO: Retirado o .db duplicado
         const client = await db.connect();
         const novaSessao = await client.query(
             "INSERT INTO sessoes_estudo (tarefa_id, usuario_id, duracao_segundos) VALUES ($1, $2, $3) RETURNING *",
@@ -457,7 +470,23 @@ app.post("/sessoes-estudo", verificarToken, async (req, res) => {
 });
 
 
+app.put('/usuarios/status-estudo', verificarToken, async (req, res) => {
+  const { esta_estudando } = req.body;
+  const usuario_id = req.usuario.id; 
 
+  try {
+    const client = await db.connect();
+    await client.query(
+      'UPDATE usuarios SET esta_estudando = $1 WHERE id = $2',
+      [esta_estudando, usuario_id]
+    );
+    client.release();
+    res.json({ sucesso: true });
+  } catch (erro) {
+    console.error("Erro ao atualizar status:", erro);
+    res.status(500).json({ erro: 'Erro ao atualizar o status de estudo.' });
+  }
+});
 
 // --- ESTATÍSTICAS / ANALYTICS ---
 app.get("/estatisticas", verificarToken, async (req, res) => {

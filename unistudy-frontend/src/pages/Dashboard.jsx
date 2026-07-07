@@ -10,6 +10,7 @@ import {
   Trash2,
   BookOpen,
   ClipboardList,
+  FileText,
 } from 'lucide-react';
 import SmartTimer from '../components/SmartTimer';
 import TaskForm from '../components/TaskForm';
@@ -286,17 +287,42 @@ export default function Dashboard() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className={modalCardClass}>
             <button onClick={fecharModalEditarTarefa} className="absolute top-4 right-5 text-muted-foreground hover:text-foreground transition-colors"><X className="h-5 w-5" /></button>
-            <h2 className="text-2xl font-bold tracking-tight mb-6 text-center text-foreground">Editar Evento</h2>
-            <form onSubmit={submitTarefaEdicao} className="flex flex-col gap-2">
+            <h2 className="text-2xl font-bold tracking-tight mb-6 text-center text-foreground">Detalhes do Evento</h2>
+            <form onSubmit={submitTarefaEdicao} className="flex flex-col gap-0">
               <select value={tipoItem} onChange={e => setTipoItem(e.target.value)} className={inputClass}>
                 <option value="tarefa">Tarefa</option>
                 <option value="prova">Prova</option>
               </select>
               <input type="text" placeholder="Título" required value={tituloTarefa} onChange={e => setTituloTarefa(e.target.value)} className={inputClass} />
               <input type="date" required value={dataTarefa} onChange={e => setDataTarefa(e.target.value)} className={inputClass} />
+              
+              {/* NOVO: Campo de Descrição */}
+              <textarea 
+                placeholder="Descrição / Conteúdos..." 
+                value={descTarefa} 
+                onChange={e => setDescTarefa(e.target.value)} 
+                className={`${inputClass} h-24 resize-none`}
+              />
 
-              <div className="flex gap-2 mt-4">
-                <button type="submit" className="flex-1 bg-primary text-primary-foreground font-semibold py-3 rounded-xl text-sm hover:bg-primary/90 active:scale-[0.98] transition-all">Atualizar</button>
+              {/* NOVO: Botão do Anexo se a tarefa tiver arquivo */}
+              {tarefaEditando.caminho_arquivo && (
+                <div className="bg-secondary/50 border border-border/50 rounded-xl p-3.5 flex items-center justify-between mb-4 mt-[-4px]">
+                  <span className="text-xs font-semibold text-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" /> Anexo
+                  </span>
+                  <a 
+                    href={`${import.meta.env.VITE_API_URL}/${tarefaEditando.caminho_arquivo}`} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-[10px] bg-primary text-primary-foreground font-bold px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+                  >
+                    Abrir Arquivo
+                  </a>
+                </div>
+              )}
+
+              <div className="flex gap-2 mt-2">
+                <button type="submit" className="flex-1 bg-primary text-primary-foreground font-semibold py-3 rounded-xl text-sm hover:bg-primary/90 active:scale-[0.98] transition-all shadow-sm">Salvar</button>
                 <button type="button" onClick={() => deletarTarefa(tarefaEditando.id)} className="flex-1 flex items-center justify-center gap-1.5 font-semibold py-3 rounded-xl text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"><Trash2 className="h-4 w-4" /> Excluir</button>
               </div>
             </form>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { Timer, Target } from 'lucide-react'; // Trazendo os ícones chiques do novo design
+import { Timer, Target } from 'lucide-react';
 
-export default function StudyAnalytics({ token, cardClass }) {
+export default function StudyAnalytics({ token }) {
   const [dados, setDados] = useState({ porMateria: [], porTipo: [] });
   const [carregando, setCarregando] = useState(true);
 
@@ -40,27 +40,36 @@ export default function StudyAnalytics({ token, cardClass }) {
   // Usando as cores do Tailwind v4 (primary e secondary) para manter o padrão
   const CORES_TIPO = ['#9046eb', '#ff7a00'];
 
-  if (carregando) return <div className={`${cardClass} p-8 text-center font-bold text-muted-foreground`}>Carregando gráficos...</div>;
+  if (carregando) {
+    return (
+      <div className="bg-card border border-border/50 rounded-3xl p-8 text-center font-bold text-muted-foreground shadow-sm">
+        Carregando gráficos...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         {/* GRÁFICO 1: Tempo por Matéria */}
-        <div className={`${cardClass} min-h-[400px] flex flex-col`}>
-          <h3 className="font-bold text-sm mb-6 text-foreground flex items-center gap-2">
-            <Timer className="h-4 w-4 text-primary" /> Tempo de Estudo por Disciplina (Minutos)
+        <div className="bg-card border border-border/50 rounded-3xl p-6 md:p-8 shadow-sm min-h-[400px] flex flex-col">
+          <h3 className="text-lg font-bold tracking-tight mb-8 text-foreground flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+              <Timer className="h-5 w-5 text-primary" />
+            </span>
+            Tempo de Estudo por Disciplina
           </h3>
-          
+
           {dados.porMateria.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center my-auto">Nenhum estudo registrado ainda.</p>
+            <p className="text-sm text-muted-foreground text-center my-auto">Nenhum estudo registrado ainda.</p>
           ) : (
-            <div className="flex-1 w-full min-h-[300px]">
+            <div className="flex-1 w-full min-h-[300px] rounded-2xl bg-secondary/20 p-3">
               <ResponsiveContainer width="100%" height="100%">
                 {/* Aumentamos a margem inferior (bottom) para acomodar o texto inclinado */}
                 <BarChart data={dados.porMateria} margin={{ bottom: 40, left: -20, right: 10, top: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                  
+
                   {/* angle={-45} para melhor leitura e dx/dy para posicionar corretamente */}
                   <XAxis 
                     dataKey="nome" 
@@ -83,7 +92,7 @@ export default function StudyAnalytics({ token, cardClass }) {
                     contentStyle={{borderRadius: '12px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--foreground)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} 
                     itemStyle={{fontWeight: 'bold'}}
                   />
-                  
+
                   {/* O Recharts automaticamente usará a propriedade 'fill' do objeto de dados */}
                   <Bar dataKey="minutos" radius={[6, 6, 0, 0]} />
                 </BarChart>
@@ -93,15 +102,18 @@ export default function StudyAnalytics({ token, cardClass }) {
         </div>
 
         {/* GRÁFICO 2: Provas vs Tarefas */}
-        <div className={`${cardClass} min-h-[400px] flex flex-col`}>
-          <h3 className="font-bold text-sm mb-6 text-foreground flex items-center gap-2">
-            <Target className="h-4 w-4 text-primary" /> Foco: Provas vs Tarefas
+        <div className="bg-card border border-border/50 rounded-3xl p-6 md:p-8 shadow-sm min-h-[400px] flex flex-col">
+          <h3 className="text-lg font-bold tracking-tight mb-8 text-foreground flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+              <Target className="h-5 w-5 text-primary" />
+            </span>
+            Foco: Provas vs Tarefas
           </h3>
-          
+
           {dados.porTipo.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center my-auto">Nenhum estudo registrado ainda.</p>
+            <p className="text-sm text-muted-foreground text-center my-auto">Nenhum estudo registrado ainda.</p>
           ) : (
-            <div className="flex-1 w-full min-h-[300px]">
+            <div className="flex-1 w-full min-h-[300px] rounded-2xl bg-secondary/20 p-3">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, X, ArrowLeft, Target, Trophy, Copy, Check, LogOut, User } from 'lucide-react';
+import { Users, Plus, X, ArrowLeft, Target, Trophy, Copy, Check, LogOut, User, BookOpen } from 'lucide-react';
 
 export default function Grupos({ token }) {
   const [grupos, setGrupos] = useState([]);
   const [grupoAtivo, setGrupoAtivo] = useState(null);
   const [ranking, setRanking] = useState([]);
+  const [periodo, setPeriodo] = useState('semanal'); // Estado para o filtro de tempo
   
   // Modais e Formulários
   const [isModalCriarOpen, setIsModalCriarOpen] = useState(false);
@@ -27,6 +28,23 @@ export default function Grupos({ token }) {
     carregarGrupos();
   }, []);
 
+  // Dispara a busca do ranking novamente se o filtro de período mudar
+  // Dispara a busca do ranking e configura a atualização "ao vivo"
+  useEffect(() => {
+    if (grupoAtivo) {
+      // Busca a primeira vez imediatamente
+      carregarRanking(grupoAtivo.id, periodo);
+      
+      // Cria um relógio invisível que atualiza o ranking a cada 10 segundos
+      const interval = setInterval(() => {
+        carregarRanking(grupoAtivo.id, periodo);
+      }, 10000); // 10000 ms = 10 segundos
+
+      // Limpa o relógio se você fechar o grupo
+      return () => clearInterval(interval);
+    }
+  }, [periodo, grupoAtivo]);
+
   const carregarGrupos = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/grupos/meus`, { headers });
@@ -34,12 +52,17 @@ export default function Grupos({ token }) {
     } catch (e) { console.error("Erro ao carregar grupos", e); }
   };
 
-  const abrirDetalhesGrupo = async (grupo) => {
-    setGrupoAtivo(grupo);
+  const carregarRanking = async (grupoId, periodoFiltro) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/grupos/${grupo.id}/stats/membros`, { headers });
+      // Passando o período como query parameter para o backend filtrar
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/grupos/${grupoId}/stats/membros?periodo=${periodoFiltro}`, { headers });
       if (res.ok) setRanking(await res.json());
     } catch (e) { console.error("Erro ao carregar ranking", e); }
+  };
+
+  const abrirDetalhesGrupo = async (grupo) => {
+    setGrupoAtivo(grupo);
+    // A chamada inicial do ranking agora é tratada pelo useEffect ali em cima
   };
 
   const criarGrupo = async (e) => {
@@ -190,28 +213,62 @@ export default function Grupos({ token }) {
               
               {/* COLUNA DO RANKING */}
               <div className="md:col-span-2">
-                <h3 className="font-bold text-lg text-foreground mb-4 flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-yellow-500" /> Ranking de Foco
-                </h3>
-                <div className="space-y-3">
-                  {ranking.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Ninguém registrou horas neste grupo ainda.</p>
-                  ) : (
-                    ranking.map((membro, index) => (
-                      <div key={membro.id} className="flex items-center justify-between bg-background border border-border/50 p-3.5 rounded-2xl">
-                        <div className="flex items-center gap-3">
-                          <span className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${index === 0 ? 'bg-yellow-100 text-yellow-700' : index === 1 ? 'bg-gray-200 text-gray-700' : index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-secondary text-muted-foreground'}`}>
-                            {index + 1}º
-                          </span>
-                          <span className="font-semibold text-foreground">{membro.nome}</span>
-                        </div>
-                        <span className="font-bold text-primary font-mono bg-primary/5 px-3 py-1 rounded-lg">
-                          {formatarTempo(membro.total_segundos)}
-                        </span>
-                      </div>
-                    ))
-                  )}
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+                  <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-yellow-500" /> Ranking de Foco
+                  </h3>
+                  
+                  {/* FILTROS DE TEMPO */}
+                  <div className="flex bg-secondary p-1 rounded-lg text-xs font-semibold">
+                    {['diario', 'semanal', 'mensal'].map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPeriodo(p)}
+                        className={`px-3 py-1.5 rounded-md capitalize transition-all ${
+                          periodo === p 
+                            ? 'bg-background shadow-sm text-foreground' 
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {p === 'diario' ? 'Hoje' : p}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                <div className="space-y-3">
+              {ranking.map((membro, index) => (
+                <div key={membro.id} className="flex items-center justify-between bg-background border border-border/50 p-3.5 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <span className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${index === 0 ? 'bg-yellow-100 text-yellow-700' : index === 1 ? 'bg-gray-200 text-gray-700' : index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-secondary text-muted-foreground'}`}>
+                      {index + 1}º
+                    </span>
+                    
+                    {/* NOME E STATUS DE ESTUDO */}
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-foreground">{membro.nome}</span>
+                      
+                      {/* INDICADOR PULSANTE DE ESTUDO AO VIVO */}
+                      {membro.esta_estudando && (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <div className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                          </div>
+                          <span className="text-[10px] font-bold text-green-600 dark:text-green-500 uppercase tracking-wide flex items-center gap-1">
+                            <BookOpen className="w-3 h-3" /> Focado agora
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <span className="font-bold text-primary font-mono bg-primary/5 px-3 py-1 rounded-lg">
+                    {formatarTempo(membro.total_segundos)}
+                  </span>
+                </div>
+              ))}
+            </div>
               </div>
 
               {/* COLUNA LATERAL DE AÇÕES */}
