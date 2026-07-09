@@ -10,7 +10,7 @@ const gruposRouter = require("./grupos");
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://o-link-do-seu-frontend-na-vercel.com'], // Adicione aqui os links que podem acessar a API
+    origin: ['http://localhost:5173', 'https://blue-flower-03f9edf0f.7.azurestaticapps.net'], // Adicione aqui os links que podem acessar a API
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));
