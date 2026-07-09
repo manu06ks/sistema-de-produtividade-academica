@@ -1,6 +1,6 @@
-# Guia de Instalação e Configuração Local - StudyX
+# Guia de Instalação e Configuração Local - UniStudy
 
-Este documento apresenta o passo a passo detalhado para configurar e executar o ecossistema **StudyX** localmente em seu ambiente de desenvolvimento.
+Este documento apresenta o passo a passo detalhado para configurar e executar o ecossistema **UniStudy** localmente em seu ambiente de desenvolvimento.
 
 ---
 
@@ -17,30 +17,30 @@ Antes de iniciar, certifique-se de ter as seguintes ferramentas instaladas em su
 
 ## 2. Instalação de Dependências
 
-O projeto está dividido em duas partes principais: `studyx-backend` e `studyx-frontend`. É necessário instalar as dependências de cada módulo separadamente.
+O projeto está dividido em duas partes principais: `UniStudy-backend` e `UniStudy-frontend`. É necessário instalar as dependências de cada módulo separadamente.
 
 ## 2.1. Configurando o Backend
 
 Abra o seu terminal na raiz do projeto e execute os seguintes comandos para acessar a pasta e instalar as bibliotecas de servidor:
 
 ```bash
-cd studyx-backend
+cd UniStudy-backend
 npm install
 cd ..
 ```
 ## 2.2. Configurando o Frontend
 Abra o seu terminal na raiz do projeto e execute os seguintes comandos para acessar a pasta do frontend e instalar as dependências:
 ```bash
-cd studyx-frontend
+cd UniStudy-frontend
 npm install
 ```
 ## 3. Configuração do Banco de Dados
 
-O StudyX utiliza o PostgreSQL como banco de dados. Siga os passos abaixo para configurá-lo localmente:
+O UniStudy utiliza o PostgreSQL como banco de dados. Siga os passos abaixo para configurá-lo localmente:
 
 1. Abra o seu gerenciador do PostgreSQL (ex: pgAdmin) ou o terminal do banco.
-2. Crie um novo banco de dados chamado `studyx_db`.
-3. Na pasta `studyx-backend`, crie um arquivo chamado `.env` (se ele já não existir) e adicione as seguintes variáveis de ambiente com as suas credenciais:
+2. Crie um novo banco de dados chamado `UniStudy_db`.
+3. Na pasta `UniStudy-backend`, crie um arquivo chamado `.env` (se ele já não existir) e adicione as seguintes variáveis de ambiente com as suas credenciais:
 
 ```env
 PORT=3000
@@ -48,7 +48,7 @@ DB_USER=seu_usuario_do_postgres
 DB_PASSWORD=sua_senha_do_postgres
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=studyx_db
+DB_NAME=UniStudy_db
 JWT_SECRET=sua_chave_secreta_jwt
 ```
 

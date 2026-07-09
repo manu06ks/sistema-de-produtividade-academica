@@ -1,7 +1,7 @@
 {
-  "name": "studyx-backend",
+  "name": "UniStudy-backend",
   "version": "1.0.0",
-  "description": "Backend do Sistema de Produtividade Acadêmica StudyX",
+  "description": "Backend do Sistema de Produtividade Acadêmica UniStudy",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

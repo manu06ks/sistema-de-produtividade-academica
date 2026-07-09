@@ -1,6 +1,6 @@
-# Documentação da API - StudyX
+# Documentação da API - UniStudy
 
-Este documento descreve os principais endpoints da API REST do StudyX, incluindo os métodos HTTP, as URLs, os parâmetros necessários e os exemplos de requisição e resposta.
+Este documento descreve os principais endpoints da API REST do UniStudy, incluindo os métodos HTTP, as URLs, os parâmetros necessários e os exemplos de requisição e resposta.
 
 ---
 

@@ -49,14 +49,14 @@ Para o desenvolvimento deste projeto, a equipe utilizou as seguintes ferramentas
 
 Abaixo estão listadas as principais bibliotecas utilizadas no ecossistema:
 
-### Backend (`studyx-backend`)
+### Backend (`UniStudy-backend`)
 * **Express:** Framework web para gerenciamento de rotas e middlewares.
 * **pg (node-postgres):** Cliente para conexão ao banco de dados PostgreSQL.
 * **bcrypt:** Biblioteca para criptografia e hashing de senhas.
 * **jsonwebtoken (JWT):** Implementação de tokens para autenticação.
 * **multer:** Middleware para tratamento de uploads de arquivos.
 
-### Frontend (`studyx-frontend`)
+### Frontend (`UniStudy-frontend`)
 * **React.js:** Biblioteca base para a construção da interface.
 * **Tailwind CSS:** Framework utilitário para estilização e design.
 
@@ -69,4 +69,4 @@ Projeto desenvolvido para a disciplina de **Engenharia de Projeto Integrador**:
 * Isadora
 
 ---
-*Sistema StudyX*
+*Sistema UniStudy*

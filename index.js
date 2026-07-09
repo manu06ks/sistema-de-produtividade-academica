@@ -56,7 +56,7 @@ function verificarToken(req, res, next) {
 
 // Rota de Health Check (Checagem de Saúde)
 app.get("/", (req, res) => {
-    res.json({ status: "🚀 API do StudyX rodando perfeitamente!" });
+    res.json({ status: "🚀 API do UniStudy rodando perfeitamente!" });
 });
 
 // Cadastro de novos usuários
@@ -126,7 +126,7 @@ app.post("/login", async (req, res) => {
 app.get("/dados-painel", verificarToken, async (req, res) => {
     try {
         res.json({ 
-            mensagem: `Bem-vinda de volta ao StudyX, ${req.usuario.nome}!`,
+            mensagem: `Bem-vinda de volta ao UniStudy, ${req.usuario.nome}!`,
             info: "Aqui ficarão as suas matérias e tarefas em breve."
         });
     } catch (error) {

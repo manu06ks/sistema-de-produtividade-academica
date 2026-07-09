@@ -34,7 +34,7 @@ export default function Login() {
       }
 
       if (isLogin) {
-        localStorage.setItem('studyx_token', data.token);
+        localStorage.setItem('UniStudy_token', data.token);
         navigate('/Dashboard');
       } else {
         // Se cadastrou com sucesso, muda para a tela de login

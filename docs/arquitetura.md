@@ -1,12 +1,12 @@
-# Arquitetura do Sistema - StudyX
+# Arquitetura do Sistema - UniStudy
 
-Este documento detalha a estrutura arquitetural do ecossistema **StudyX**, explicando o fluxo de dados, o modelo de desenvolvimento e os mecanismos de segurança implementados.
+Este documento detalha a estrutura arquitetural do ecossistema **UniStudy**, explicando o fluxo de dados, o modelo de desenvolvimento e os mecanismos de segurança implementados.
 
 ---
 
 ## 1. Estrutura do Sistema (Cliente-Servidor / REST API)
 
-O StudyX foi desenvolvido utilizando uma arquitetura **Cliente-Servidor** desacoplada, dividida em duas camadas independentes:
+O UniStudy foi desenvolvido utilizando uma arquitetura **Cliente-Servidor** desacoplada, dividida em duas camadas independentes:
 
 * **Frontend (Cliente):** Interface SPA (Single Page Application) desenvolvida para consumo ágil de dados e renderização dinâmica dos componentes visuais (como o quadro Kanban).
 * **Backend (Servidor):** API RESTful estruturada em Node.js que gerencia as regras de negócio, persistência de dados e segurança da aplicação.

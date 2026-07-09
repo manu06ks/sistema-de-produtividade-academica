@@ -23,7 +23,7 @@ import { NotificationBell, JoinSubjectModal, InviteBadge } from '../components/N
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('studyx_token');
+  const token = localStorage.getItem('UniStudy_token');
 
   // --- CONTROLO DE TELA ATIVA ---
   const [telaAtiva, setTelaAtiva] = useState('dashboard');
@@ -162,7 +162,7 @@ export default function Dashboard() {
     }
   };
 
-  const fazerLogout = () => { localStorage.removeItem('studyx_token'); navigate('/'); };
+  const fazerLogout = () => { localStorage.removeItem('UniStudy_token'); navigate('/'); };
 
   // --- CONSTANTES DE ESTILO ---
   const roxoPrincipal = "#7c3aed";

@@ -40,20 +40,18 @@ export default function Grupos({ token }) {
 
   useEffect(() => {
     if (grupoAtivo) {
+      // Busca a primeira vez imediatamente
       carregarRanking(grupoAtivo.id, periodo);
+      
+      // Define o intervalo de segurança de 10s
       const interval = setInterval(() => {
         carregarRanking(grupoAtivo.id, periodo);
       }, 10000);
+      
       return () => clearInterval(interval);
     }
-  }, [periodo, grupoAtivo]);
-
-  const carregarGrupos = async () => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/grupos/meus`, { headers });
-      if (res.ok) setGrupos(await res.json());
-    } catch (e) { console.error("Erro ao carregar grupos", e); }
-  };
+    // Adicionando os estados do timer como gatilhos de atualização imediata!
+  }, [periodo, grupoAtivo, isTimerActive, timerMode]);
 
   const carregarRanking = async (grupoId, periodoFiltro) => {
     try {
@@ -239,10 +237,10 @@ export default function Grupos({ token }) {
 
                 <div className="space-y-3">
                   {ranking.map((membro, index) => {
-                    // MÁGICA AQUI: Verifica se a linha do ranking é VOCÊ!
-                    const souEu = membro.id === meuUsuarioId;
+                    // Proteção de tipo: Garante que ambos sejam tratados como texto para não falhar o match
+                    const souEu = String(membro.id) === String(meuUsuarioId);
                     
-                    // Se for você, obedece ao timer IMEDIATAMENTE. Se for os outros, obedece ao banco (membro.esta_estudando).
+                    // Se for você, obedece ao timer LOCAL imediatamente. Se for os outros, olha pro banco.
                     const estaFocado = souEu ? (isTimerActive && timerMode === 'foco') : membro.esta_estudando;
 
                     return (
