@@ -3,7 +3,7 @@ import { Play, Pause, Save, Coffee, Sandwich, Square } from 'lucide-react';
 import { TimerContext } from '../contexts/TimerContext'; // Ajuste o caminho se necessário
 
 export default function SmartTimer({ tarefas, token }) {
-  // Consumindo os estados globais em vez de criar estados locais
+  // Consumindo os estados globais do contexto (Aqui estava faltando o timerMode!)
   const {
     timeElapsed, setTimeElapsed,
     timeLeft, setTimeLeft,
@@ -15,13 +15,13 @@ export default function SmartTimer({ tarefas, token }) {
   const formatTime = (sec) => `${Math.floor(sec / 60).toString().padStart(2, '0')}:${(sec % 60).toString().padStart(2, '0')}`;
 
   const atualizarStatusAoVivo = async (status) => {
-  try {
-    await fetch(`${import.meta.env.VITE_API_URL}/usuarios/status-estudo`, {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ esta_estudando: status })
-    });
-  } catch (e) { console.error("Erro ao avisar backend:", e); }
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/usuarios/status-estudo`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ esta_estudando: status })
+      });
+    } catch (e) { console.error("Erro ao avisar backend:", e); }
   };
 
   const iniciarFoco = () => { 
@@ -31,10 +31,21 @@ export default function SmartTimer({ tarefas, token }) {
     atualizarStatusAoVivo(true);
   };
   
+  const pausarFoco = () => {
+    setIsTimerActive(false);
+    atualizarStatusAoVivo(false);
+  };
+
+  const retomarFoco = () => {
+    setIsTimerActive(true);
+    atualizarStatusAoVivo(true);
+  };
+
   const iniciarPausa = (min) => { 
     setTimerMode('pausa'); 
     setTimeLeft(min * 60); 
     setIsTimerActive(true); 
+    atualizarStatusAoVivo(false);
   };
 
   const finalizarSessaoEstudo = async () => {
@@ -46,7 +57,9 @@ export default function SmartTimer({ tarefas, token }) {
         body: JSON.stringify({ tarefa_id: tarefaSelecionadaTimer, duracao_segundos: timeElapsed })
       });
       alert(`Sessão de ${formatTime(timeElapsed)} salva! 🚀`);
+      
       atualizarStatusAoVivo(false);
+      
       // Reseta os estados globais após salvar
       setTimeElapsed(0); 
       setIsTimerActive(false); 
@@ -113,7 +126,7 @@ export default function SmartTimer({ tarefas, token }) {
             )}
             {isTimerActive && (
               <button
-                onClick={() => setIsTimerActive(false)}
+                onClick={pausarFoco}
                 className="w-full flex items-center justify-center gap-2 font-bold py-3 rounded-xl text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 active:scale-[0.98] transition-all"
               >
                 <Pause className="size-4" /> Pausar
@@ -123,7 +136,7 @@ export default function SmartTimer({ tarefas, token }) {
               <div className="flex flex-col gap-3 w-full">
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setIsTimerActive(true)}
+                    onClick={retomarFoco}
                     className="flex-1 flex items-center justify-center gap-1.5 font-bold py-3 rounded-xl text-xs bg-secondary text-secondary-foreground hover:bg-accent active:scale-[0.98] transition-all"
                   >
                     <Play className="size-3.5" /> Retomar

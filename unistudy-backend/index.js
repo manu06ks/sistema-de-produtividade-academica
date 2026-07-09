@@ -138,15 +138,32 @@ app.get("/dados-painel", verificarToken, async (req, res) => {
 // --- MATÉRIAS ---
 app.post("/materias", verificarToken, async (req, res) => {
     const { nome, professor, cor } = req.body;
+    
+    // Gera um código de 6 caracteres (letras e números)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let codigo = '';
+    for (let i = 0; i < 6; i++) codigo += chars[Math.floor(Math.random() * chars.length)];
+
     try {
         const client = await db.connect();
+        
+        // 1. Cria a matéria com o código
         const novaMateria = await client.query(
-            "INSERT INTO materias (usuario_id, nome, professor, cor) VALUES ($1, $2, $3, $4) RETURNING *",
-            [req.usuario.id, nome, professor, cor]
+            "INSERT INTO materias (usuario_id, nome, professor, cor, codigo_compartilhamento) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+            [req.usuario.id, nome, professor, cor, codigo]
         );
+        const materiaId = novaMateria.rows[0].id;
+
+        // 2. Inscreve você mesma na matéria
+        await client.query(
+            "INSERT INTO materia_inscricoes (usuario_id, materia_id) VALUES ($1, $2)",
+            [req.usuario.id, materiaId]
+        );
+
         client.release();
         res.status(201).json(novaMateria.rows[0]);
     } catch (error) {
+        console.error("Erro ao criar matéria:", error);
         res.status(500).json({ erro: "Falha ao salvar a matéria." });
     }
 });
@@ -154,14 +171,75 @@ app.post("/materias", verificarToken, async (req, res) => {
 app.get("/materias", verificarToken, async (req, res) => {
     try {
         const client = await db.connect();
-        const materias = await client.query("SELECT * FROM materias WHERE usuario_id = $1", [req.usuario.id]);
+        const result = await client.query(`
+            SELECT m.*, u.nome as criador_nome, 
+            CASE WHEN m.usuario_id = $1 THEN true ELSE false END as is_criador
+            FROM materias m
+            JOIN materia_inscricoes mi ON m.id = mi.materia_id
+            JOIN usuarios u ON m.usuario_id = u.id
+            WHERE mi.usuario_id = $1
+        `, [req.usuario.id]);
         client.release();
-        res.json(materias.rows);
-    } catch (error) {
-        res.status(500).json({ erro: "Falha ao carregar as matérias." });
-    }
+        res.json(result.rows);
+    } catch (error) { console.error(error); res.status(500).json({ erro: "Erro." }); }
 });
 
+app.get("/materias/:id/membros", verificarToken, async (req, res) => {
+    try {
+        const client = await db.connect();
+        const result = await client.query(`
+            SELECT u.id, u.nome FROM materia_inscricoes mi 
+            JOIN usuarios u ON mi.usuario_id = u.id WHERE mi.materia_id = $1
+        `, [req.params.id]);
+        client.release();
+        res.json(result.rows);
+    } catch (error) { console.error(error); res.status(500).json({ erro: "Erro." }); }
+});
+
+app.post("/materias/entrar", verificarToken, async (req, res) => {
+    const { codigo_compartilhamento } = req.body;
+    try {
+        const client = await db.connect();
+        const mat = await client.query("SELECT * FROM materias WHERE codigo_compartilhamento = $1", [codigo_compartilhamento]);
+        
+        if (mat.rows.length === 0) {
+            client.release(); return res.status(404).json({ erro: "Código inválido." });
+        }
+        const materia = mat.rows[0];
+
+        if (materia.usuario_id === req.usuario.id) {
+            client.release(); return res.status(400).json({ erro: "Você é o criador desta disciplina." });
+        }
+
+        const checkInscrito = await client.query("SELECT id FROM materia_inscricoes WHERE materia_id = $1 AND usuario_id = $2", [materia.id, req.usuario.id]);
+        if (checkInscrito.rows.length > 0) {
+            client.release(); return res.status(400).json({ erro: "Você já está na disciplina." });
+        }
+
+        // Cria a notificação para o CRIADOR autorizar
+        await client.query(`
+            INSERT INTO notificacoes (destinatario_id, remetente_id, materia_id, tipo_notificacao, status)
+            VALUES ($1, $2, $3, 'inscricao', 'pendente')
+        `, [materia.usuario_id, req.usuario.id, materia.id]);
+
+        client.release();
+        res.json({ mensagem: "Pedido de entrada enviado ao criador!" });
+    } catch (error) { console.error(error); res.status(500).json({ erro: "Erro." }); }
+});
+app.delete("/materias/:id/sair", verificarToken, async (req, res) => {
+    try {
+        const client = await db.connect();
+        const mat = await client.query("SELECT usuario_id FROM materias WHERE id = $1", [req.params.id]);
+        
+        if (mat.rows.length > 0 && mat.rows[0].usuario_id === req.usuario.id) {
+            client.release(); return res.status(400).json({ erro: "Criadores devem usar a opção Apagar Disciplina." });
+        }
+        
+        await client.query("DELETE FROM materia_inscricoes WHERE materia_id = $1 AND usuario_id = $2", [req.params.id, req.usuario.id]);
+        client.release();
+        res.json({ mensagem: "Você saiu da disciplina." });
+    } catch (error) { console.error(error); res.status(500).json({ erro: "Erro." }); }
+});
 // --- ROTA PARA EDITAR MATÉRIA ---
 app.put("/materias/:id", verificarToken, async (req, res) => {
     const { id } = req.params; 
@@ -195,30 +273,34 @@ app.put("/materias/:id", verificarToken, async (req, res) => {
 app.post("/tarefas", verificarToken, upload.single('arquivo'), async (req, res) => {
     const { materia_id, titulo, data_entrega, prioridade, descricao, tipo, conteudos } = req.body;
     
-    // Se o usuário enviou um arquivo, pegamos os dados do multer, senão fica null
     const nome_arquivo = req.file ? req.file.originalname : null;
     const caminho_arquivo = req.file ? req.file.path : null;
-    const tipo_arquivo = req.file ? req.file.mimetype : null; // Pegamos o mime type para a biblioteca
+    const tipo_arquivo = req.file ? req.file.mimetype : null; 
 
     try {
         const client = await db.connect();
         
-        // Verificação de segurança da matéria
-        const check = await client.query("SELECT id FROM materias WHERE id = $1 AND usuario_id = $2", [materia_id, req.usuario.id]);
+        // 1. NOVA VERIFICAÇÃO DE SEGURANÇA: Olha para as INSCRIÇÕES, e não para o dono
+        const check = await client.query(
+            "SELECT id FROM materia_inscricoes WHERE materia_id = $1 AND usuario_id = $2", 
+            [materia_id, req.usuario.id]
+        );
+        
         if (check.rows.length === 0) {
             client.release();
             return res.status(403).json({ erro: "Acesso negado à matéria." });
         }
 
-        // 1. Insere a Tarefa
+        // 2. INSERÇÃO: Adicionando o usuario_id na tabela tarefas
         const novaTarefa = await client.query(
             `INSERT INTO tarefas 
-                (materia_id, titulo, data_entrega, status, prioridade, descricao, tipo, conteudos, nome_arquivo, caminho_arquivo) 
+                (materia_id, usuario_id, titulo, data_entrega, status, prioridade, descricao, tipo, conteudos, nome_arquivo, caminho_arquivo) 
              VALUES 
-                ($1, $2, $3, 'pendente', $4, $5, $6, $7, $8, $9) 
+                ($1, $2, $3, $4, 'pendente', $5, $6, $7, $8, $9, $10) 
              RETURNING *`,
             [
                 materia_id, 
+                req.usuario.id, 
                 titulo, 
                 data_entrega || null, 
                 prioridade || 'media', 
@@ -230,7 +312,7 @@ app.post("/tarefas", verificarToken, upload.single('arquivo'), async (req, res) 
             ]
         );
         
-        // 2. A MÁGICA: Se houver um anexo, vincula automaticamente na Biblioteca Digital da Matéria
+        // Biblioteca Digital
         if (caminho_arquivo) {
             await client.query(
                 `INSERT INTO materiais (usuario_id, materia_id, titulo, nome_arquivo, caminho_arquivo, tipo_arquivo) 
@@ -244,6 +326,23 @@ app.post("/tarefas", verificarToken, upload.single('arquivo'), async (req, res) 
                     tipo_arquivo
                 ]
             );
+        }
+
+        // 3. O GATILHO DAS NOTIFICAÇÕES
+        const tarefaId = novaTarefa.rows[0].id;
+        
+        const membros = await client.query(
+            "SELECT usuario_id FROM materia_inscricoes WHERE materia_id = $1 AND usuario_id != $2",
+            [materia_id, req.usuario.id]
+        );
+
+        if (membros.rows.length > 0) {
+            const values = membros.rows.map(m => `(${m.usuario_id}, ${req.usuario.id}, ${tarefaId}, 'pendente')`).join(',');
+            
+            await client.query(`
+                INSERT INTO notificacoes (destinatario_id, remetente_id, tarefa_origem_id, status)
+                VALUES ${values}
+            `);
         }
 
         client.release();
@@ -261,7 +360,7 @@ app.get("/tarefas", verificarToken, async (req, res) => {
             SELECT t.*, m.nome as materia_nome, m.cor as materia_cor
             FROM tarefas t
             JOIN materias m ON t.materia_id = m.id
-            WHERE m.usuario_id = $1
+            WHERE t.usuario_id = $1
         `, [req.usuario.id]);
         client.release();
         res.json(tarefas.rows);
@@ -394,6 +493,30 @@ app.delete("/tarefas/:id", verificarToken, async (req, res) => {
         res.status(500).json({ erro: "Erro ao deletar tarefa." });
     }
 });
+// --- ROTA PARA EXCLUIR MATERIAL (Apenas para o usuário logado) ---
+app.delete("/materiais/:id", verificarToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const client = await db.connect();
+
+        // Tenta deletar a linha que pertence EXATAMENTE ao usuário logado
+        const result = await client.query(
+            "DELETE FROM materiais WHERE id = $1 AND usuario_id = $2 RETURNING id", 
+            [id, req.usuario.id]
+        );
+
+        if (result.rowCount === 0) {
+            client.release();
+            return res.status(404).json({ erro: "Material não encontrado ou você não tem permissão." });
+        }
+
+        client.release();
+        res.json({ mensagem: "Material removido da sua biblioteca." });
+    } catch (error) {
+        console.error("Erro ao excluir material:", error);
+        res.status(500).json({ erro: "Erro ao excluir material." });
+    }
+});
 
 // --- ROTA PARA ARQUIVAR TAREFAS CONCLUÍDAS ---
 app.put("/tarefas/arquivar-concluidas", verificarToken, async (req, res) => {
@@ -428,6 +551,21 @@ app.post("/materiais/upload", verificarToken, upload.single('arquivo'), async (r
             "INSERT INTO materiais (usuario_id, materia_id, titulo, nome_arquivo, caminho_arquivo, tipo_arquivo) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
             [req.usuario.id, materia_id, titulo, arquivo.filename, arquivo.path, arquivo.mimetype]
         );
+
+        const materialId = novoMaterial.rows[0].id;
+        const membros = await client.query(
+            "SELECT usuario_id FROM materia_inscricoes WHERE materia_id = $1 AND usuario_id != $2",
+            [materia_id, req.usuario.id]
+        );
+
+        if (membros.rows.length > 0) {
+            const values = membros.rows.map(m => `(${m.usuario_id}, ${req.usuario.id}, ${materialId}, 'material', 'pendente')`).join(',');
+            await client.query(`
+                INSERT INTO notificacoes (destinatario_id, remetente_id, material_origem_id, tipo_notificacao, status)
+                VALUES ${values}
+            `);
+        }
+
         client.release();
         res.status(201).json(novoMaterial.rows[0]);
     } catch (error) {
@@ -449,6 +587,7 @@ app.get("/materiais", verificarToken, async (req, res) => {
         client.release();
         res.json(resultado.rows);
     } catch (error) {
+        console.error("Erro ao buscar biblioteca:", error);
         res.status(500).json({ erro: "Erro ao buscar biblioteca." });
     }
 });
@@ -489,49 +628,163 @@ app.put('/usuarios/status-estudo', verificarToken, async (req, res) => {
 });
 
 // --- ESTATÍSTICAS / ANALYTICS ---
+// ROTA DE ESTATÍSTICAS 
 app.get("/estatisticas", verificarToken, async (req, res) => {
     try {
         const client = await db.connect();
+        const usuarioId = req.usuario.id;
 
-        // 1. Soma o tempo gasto em cada Matéria (Para o Gráfico de Barras)
-        const tempoPorMateria = await client.query(`
+        // 1. KPIs Gerais (Baseado nas suas tarefas reais)
+        const kpis = await client.query(`
             SELECT 
-                m.nome as materia, 
-                m.cor, 
-                SUM(s.duracao_segundos) as total_segundos
+                COUNT(id) as total_tarefas,
+                COUNT(CASE WHEN status = 'concluida' THEN 1 END) as tarefas_concluidas
+            FROM tarefas WHERE usuario_id = $1
+        `, [usuarioId]);
+
+        // 2. Tempo por Disciplina (Lê as horas salvas pelo seu SmartTimer!)
+        let disciplinasReais = [];
+        const disc = await client.query(`
+            SELECT m.nome, m.cor, SUM(s.duracao_segundos) as total_segs
             FROM sessoes_estudo s
             JOIN tarefas t ON s.tarefa_id = t.id
             JOIN materias m ON t.materia_id = m.id
-            WHERE m.usuario_id = $1
+            WHERE t.usuario_id = $1
             GROUP BY m.nome, m.cor
-        `, [req.usuario.id]);
+            HAVING SUM(s.duracao_segundos) > 0
+        `, [usuarioId]);
+        
+        disciplinasReais = disc.rows.map(d => ({
+            nome: d.nome,
+            cor: d.cor || '#7c3aed',
+            horas: parseFloat((d.total_segs / 3600).toFixed(1))
+        }));
 
-        // 2. Soma o tempo gasto por Tipo: Prova vs Tarefa (Para o Gráfico de Pizza)
-        const tempoPorTipo = await client.query(`
+        const horasTotais = disciplinasReais.reduce((acc, curr) => acc + curr.horas, 0);
+
+        // 3. Volume de Entregas (Lê as tarefas dos últimos 7 dias reais)
+        const entregas = await client.query(`
             SELECT 
-                t.tipo, 
-                SUM(s.duracao_segundos) as total_segundos
-            FROM sessoes_estudo s
-            JOIN tarefas t ON s.tarefa_id = t.id
-            JOIN materias m ON t.materia_id = m.id
-            WHERE m.usuario_id = $1
-            GROUP BY t.tipo
-        `, [req.usuario.id]);
+                EXTRACT(DOW FROM data_entrega) as dia_semana,
+                COUNT(id) as criadas,
+                COUNT(CASE WHEN status = 'concluida' THEN 1 END) as concluidas
+            FROM tarefas 
+            WHERE usuario_id = $1 
+              AND data_entrega >= CURRENT_DATE - INTERVAL '6 days'
+            GROUP BY EXTRACT(DOW FROM data_entrega)
+        `, [usuarioId]);
+
+        const diasNomes = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        const entregasReais = entregas.rows.map(e => ({
+            dia: diasNomes[parseInt(e.dia_semana)],
+            criadas: parseInt(e.criadas),
+            concluidas: parseInt(e.concluidas)
+        }));
 
         client.release();
 
-        // Envia as duas respostas juntas para o Frontend
+        // DEVOLVE APENAS A REALIDADE PARA O FRONTEND
         res.json({
-            porMateria: tempoPorMateria.rows,
-            porTipo: tempoPorTipo.rows
+            horasTotais: horasTotais,
+            comparacaoHoras: '',
+            tarefasConcluidas: parseInt(kpis.rows[0].tarefas_concluidas || 0),
+            tarefasTotal: parseInt(kpis.rows[0].total_tarefas || 0),
+            streak: 0, 
+            disciplinas: disciplinasReais,
+            entregas: entregasReais,
+            heatmap: null // Mantemos nulo até implementarmos a matriz real de 365 dias
         });
 
     } catch (error) {
-        console.error("Erro ao buscar estatísticas:", error);
-        res.status(500).json({ erro: "Erro ao calcular o tempo de estudo." });
+        console.error("Erro ao gerar estatísticas:", error);
+        res.status(500).json({ erro: "Erro ao gerar analytics." });
     }
 });
+//NOTIFICACOES
 
+// --- ROTA PARA BUSCAR NOTIFICAÇÕES ---
+app.get("/notificacoes", verificarToken, async (req, res) => {
+    try {
+        const client = await db.connect();
+        const result = await client.query(`
+            SELECT n.id, u.nome as autor, 
+                COALESCE(t.titulo, mat.titulo, n.titulo_tarefa) as tarefa, 
+                m.nome as disciplina, 
+                n.criado_em as tempo,
+                n.tipo_notificacao
+            FROM notificacoes n
+            JOIN usuarios u ON n.remetente_id = u.id
+            LEFT JOIN tarefas t ON n.tarefa_origem_id = t.id
+            LEFT JOIN materiais mat ON n.material_origem_id = mat.id
+            LEFT JOIN materias m ON m.id = COALESCE(t.materia_id, mat.materia_id, n.materia_id)
+            WHERE n.destinatario_id = $1 AND n.status = 'pendente'
+            ORDER BY n.criado_em DESC
+        `, [req.usuario.id]);
+        client.release();
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Erro ao buscar notificações:", error);
+        res.status(500).json({ erro: "Erro ao buscar notificações." });
+    }
+});
+// --- ROTA PARA ACEITAR/RECUSAR TAREFA ---
+// --- ROTA PARA ACEITAR/RECUSAR TAREFA ---
+// --- ROTA PARA ACEITAR/RECUSAR TAREFA (BLINDADA) ---
+app.post("/notificacoes/:id/responder", verificarToken, async (req, res) => {
+    const { id } = req.params;
+    const { aceitar } = req.body; 
+
+    try {
+        const client = await db.connect();
+        const notif = await client.query("SELECT tarefa_origem_id, material_origem_id, tipo_notificacao, remetente_id, materia_id FROM notificacoes WHERE id = $1", [id]);
+
+        if (notif.rows.length === 0) {
+            client.release(); return res.status(404).json({ erro: "Aviso já respondido." });
+        }
+
+        if (!aceitar) {
+            await client.query("UPDATE notificacoes SET status = 'recusada' WHERE id = $1", [id]);
+            client.release(); return res.json({ mensagem: "Item recusado." });
+        }
+
+        const { tarefa_origem_id, material_origem_id, tipo_notificacao, remetente_id, materia_id } = notif.rows[0];
+
+        // Aprovar a entrada do aluno
+        if (tipo_notificacao === 'inscricao') {
+            await client.query("INSERT INTO materia_inscricoes (usuario_id, materia_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [remetente_id, materia_id]);
+        }
+
+        // Se for um Material (Arquivo)
+        else if (tipo_notificacao === 'material') {
+            const matOriginal = await client.query("SELECT * FROM materiais WHERE id = $1", [material_origem_id]);
+            if (matOriginal.rows.length > 0) {
+                const m = matOriginal.rows[0];
+                await client.query(`
+                    INSERT INTO materiais (usuario_id, materia_id, titulo, nome_arquivo, caminho_arquivo, tipo_arquivo)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                `, [req.usuario.id, m.materia_id, m.titulo, m.nome_arquivo, m.caminho_arquivo, m.tipo_arquivo]);
+            }
+        } 
+        // Se for uma Tarefa
+        else if (tipo_notificacao === 'tarefa') {
+            const tarOriginal = await client.query("SELECT * FROM tarefas WHERE id = $1", [tarefa_origem_id]);
+            if (tarOriginal.rows.length > 0) {
+                const t = tarOriginal.rows[0];
+                await client.query(`
+                    INSERT INTO tarefas (materia_id, usuario_id, titulo, data_entrega, status, prioridade, descricao, tipo, conteudos, nome_arquivo, caminho_arquivo)
+                    VALUES ($1, $2, $3, $4, 'pendente', $5, $6, $7, $8, $9, $10)
+                `, [t.materia_id, req.usuario.id, t.titulo, t.data_entrega, t.prioridade, t.descricao, t.tipo, t.conteudos, t.nome_arquivo, t.caminho_arquivo]);
+            }
+        }
+
+        await client.query("UPDATE notificacoes SET status = 'aceita' WHERE id = $1", [id]);
+        client.release();
+        res.json({ mensagem: "Adicionado com sucesso ao seu painel!" });
+    } catch (error) {
+        console.error("ERRO GRAVE:", error);
+        res.status(500).json({ erro: "Erro ao processar." });
+    }
+});
 //INICIALIZAÇÃO DO SERVIDOR
 app.listen(port, () => {
     console.log(` Backend rodando na porta ${port}`);

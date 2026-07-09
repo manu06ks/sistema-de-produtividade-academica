@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Users, Plus, X, ArrowLeft, Target, Trophy, Copy, Check, LogOut, User, BookOpen } from 'lucide-react';
+import { TimerContext } from '../contexts/TimerContext'; 
 
 export default function Grupos({ token }) {
+  // Consumindo o estado real do seu cronômetro
+  const { isTimerActive, timerMode } = useContext(TimerContext);
+
   const [grupos, setGrupos] = useState([]);
   const [grupoAtivo, setGrupoAtivo] = useState(null);
   const [ranking, setRanking] = useState([]);
-  const [periodo, setPeriodo] = useState('semanal'); // Estado para o filtro de tempo
+  const [periodo, setPeriodo] = useState('semanal'); 
   
   // Modais e Formulários
   const [isModalCriarOpen, setIsModalCriarOpen] = useState(false);
@@ -19,6 +23,12 @@ export default function Grupos({ token }) {
   // Feedback visual do botão de copiar
   const [copiado, setCopiado] = useState(false);
 
+  // Decodifica o token JWT para descobrir qual é o SEU id de usuário
+  const meuUsuarioId = (() => {
+    try { return JSON.parse(atob(token.split('.')[1])).id; } 
+    catch (e) { return null; }
+  })();
+
   const headers = { 
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json' 
@@ -28,19 +38,12 @@ export default function Grupos({ token }) {
     carregarGrupos();
   }, []);
 
-  // Dispara a busca do ranking novamente se o filtro de período mudar
-  // Dispara a busca do ranking e configura a atualização "ao vivo"
   useEffect(() => {
     if (grupoAtivo) {
-      // Busca a primeira vez imediatamente
       carregarRanking(grupoAtivo.id, periodo);
-      
-      // Cria um relógio invisível que atualiza o ranking a cada 10 segundos
       const interval = setInterval(() => {
         carregarRanking(grupoAtivo.id, periodo);
-      }, 10000); // 10000 ms = 10 segundos
-
-      // Limpa o relógio se você fechar o grupo
+      }, 10000);
       return () => clearInterval(interval);
     }
   }, [periodo, grupoAtivo]);
@@ -54,7 +57,6 @@ export default function Grupos({ token }) {
 
   const carregarRanking = async (grupoId, periodoFiltro) => {
     try {
-      // Passando o período como query parameter para o backend filtrar
       const res = await fetch(`${import.meta.env.VITE_API_URL}/grupos/${grupoId}/stats/membros?periodo=${periodoFiltro}`, { headers });
       if (res.ok) setRanking(await res.json());
     } catch (e) { console.error("Erro ao carregar ranking", e); }
@@ -62,7 +64,6 @@ export default function Grupos({ token }) {
 
   const abrirDetalhesGrupo = async (grupo) => {
     setGrupoAtivo(grupo);
-    // A chamada inicial do ranking agora é tratada pelo useEffect ali em cima
   };
 
   const criarGrupo = async (e) => {
@@ -237,38 +238,48 @@ export default function Grupos({ token }) {
                 </div>
 
                 <div className="space-y-3">
-              {ranking.map((membro, index) => (
-                <div key={membro.id} className="flex items-center justify-between bg-background border border-border/50 p-3.5 rounded-2xl">
-                  <div className="flex items-center gap-3">
-                    <span className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${index === 0 ? 'bg-yellow-100 text-yellow-700' : index === 1 ? 'bg-gray-200 text-gray-700' : index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-secondary text-muted-foreground'}`}>
-                      {index + 1}º
-                    </span>
+                  {ranking.map((membro, index) => {
+                    // MÁGICA AQUI: Verifica se a linha do ranking é VOCÊ!
+                    const souEu = membro.id === meuUsuarioId;
                     
-                    {/* NOME E STATUS DE ESTUDO */}
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-foreground">{membro.nome}</span>
-                      
-                      {/* INDICADOR PULSANTE DE ESTUDO AO VIVO */}
-                      {membro.esta_estudando && (
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <div className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                          </div>
-                          <span className="text-[10px] font-bold text-green-600 dark:text-green-500 uppercase tracking-wide flex items-center gap-1">
-                            <BookOpen className="w-3 h-3" /> Focado agora
+                    // Se for você, obedece ao timer IMEDIATAMENTE. Se for os outros, obedece ao banco (membro.esta_estudando).
+                    const estaFocado = souEu ? (isTimerActive && timerMode === 'foco') : membro.esta_estudando;
+
+                    return (
+                      <div key={membro.id} className="flex items-center justify-between bg-background border border-border/50 p-3.5 rounded-2xl">
+                        <div className="flex items-center gap-3">
+                          <span className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${index === 0 ? 'bg-yellow-100 text-yellow-700' : index === 1 ? 'bg-gray-200 text-gray-700' : index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-secondary text-muted-foreground'}`}>
+                            {index + 1}º
                           </span>
+                          
+                          {/* NOME E STATUS DE ESTUDO */}
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-foreground">
+                              {membro.nome} {souEu && "(Você)"}
+                            </span>
+                            
+                            {/* INDICADOR PULSANTE DE ESTUDO */}
+                            {estaFocado && (
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <div className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                </div>
+                                <span className="text-[10px] font-bold text-green-600 dark:text-green-500 uppercase tracking-wide flex items-center gap-1">
+                                  <BookOpen className="w-3 h-3" /> Focado agora
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <span className="font-bold text-primary font-mono bg-primary/5 px-3 py-1 rounded-lg">
-                    {formatarTempo(membro.total_segundos)}
-                  </span>
+                        
+                        <span className="font-bold text-primary font-mono bg-primary/5 px-3 py-1 rounded-lg">
+                          {formatarTempo(membro.total_segundos)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
               </div>
 
               {/* COLUNA LATERAL DE AÇÕES */}

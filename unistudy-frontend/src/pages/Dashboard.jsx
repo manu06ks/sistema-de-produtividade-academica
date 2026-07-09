@@ -18,14 +18,15 @@ import Planners from '../components/Planners';
 import SubjectList from '../components/SubjectList';
 import Library from '../components/Library';
 import StudyAnalytics from '../components/StudyAnalytics';
-import Grupos from '../components/Grupos'; // Importando o novo componente de Grupos
+import Grupos from '../components/Grupos';
+import { NotificationBell, JoinSubjectModal, InviteBadge } from '../components/Notification'; // Ajuste na importação
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const token = localStorage.getItem('studyx_token');
 
   // --- CONTROLO DE TELA ATIVA ---
-  const [telaAtiva, setTelaAtiva] = useState('dashboard'); // 'dashboard' ou 'analytics' ou 'grupos'
+  const [telaAtiva, setTelaAtiva] = useState('dashboard');
 
   // --- ESTADOS DE DADOS ---
   const [materias, setMaterias] = useState([]);
@@ -35,6 +36,8 @@ export default function Dashboard() {
   // --- ESTADOS DE MODAIS E FORMULÁRIOS ---
   const [isModalMateriaOpen, setIsModalMateriaOpen] = useState(false);
   const [isModalDocumentoOpen, setIsModalDocumentoOpen] = useState(false);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false); // Novo estado para o Modal de Entrar
+  
   const [editandoMateriaId, setEditandoMateriaId] = useState(null);
   const [materiaDetalhe, setMateriaDetalhe] = useState(null);
   const [tarefaEditando, setTarefaEditando] = useState(null);
@@ -51,6 +54,8 @@ export default function Dashboard() {
   const [dataTarefa, setDataTarefa] = useState('');
   const [tipoItem, setTipoItem] = useState('tarefa');
   const [descTarefa, setDescTarefa] = useState('');
+
+  const [membrosMateria, setMembrosMateria] = useState([]);
 
   // --- REQUISIÇÕES INICIAIS ---
   useEffect(() => {
@@ -113,11 +118,27 @@ export default function Dashboard() {
     await fetch(`${import.meta.env.VITE_API_URL}/materiais/upload`, { method: 'POST', headers, body: formData });
     setTituloUpload(''); setMateriaUpload(''); carregarBiblioteca(); setIsModalDocumentoOpen(false);
   };
+  const abrirDetalhesMateria = async (m) => {
+    setMateriaDetalhe(m);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/materias/${m.id}/membros`, { headers });
+      if (res.ok) setMembrosMateria(await res.json());
+    } catch (e) { console.error(e); }
+  };
+
+  const sairMateria = async (id) => {
+    if (!window.confirm("Deseja mesmo sair deste grupo?")) return;
+    await fetch(`${import.meta.env.VITE_API_URL}/materias/${id}/sair`, { method: 'DELETE', headers });
+    setMateriaDetalhe(null);
+    carregarTudo();
+  };
 
   // --- CONTROLE DE MODAIS ---
   const abrirModalNovaMateria = () => { setNomeMateria(''); setProfMateria(''); setEditandoMateriaId(null); setIsModalMateriaOpen(true); };
   const abrirModalEditarMateria = (m) => { setNomeMateria(m.nome); setProfMateria(m.professor || ''); setCorMateria(m.cor || '#c175e7'); setEditandoMateriaId(m.id); setIsModalMateriaOpen(true); };
   const fecharModalMateria = () => { setIsModalMateriaOpen(false); setEditandoMateriaId(null); };
+
+  const abrirModalEntrarMateria = () => setIsJoinModalOpen(true); // Função para abrir o modal de entrar
 
   const abrirModalEditarTarefa = (t) => {
     setTipoItem(t.tipo || 'tarefa'); setTituloTarefa(t.titulo);
@@ -125,6 +146,21 @@ export default function Dashboard() {
     setTarefaEditando(t);
   };
   const fecharModalEditarTarefa = () => { setTarefaEditando(null); setTituloTarefa(''); setDataTarefa(''); setDescTarefa(''); };
+  const deletarMaterial = async (id) => {
+    if (!window.confirm("Deseja remover este arquivo da sua biblioteca? Isso não afetará os outros alunos da matéria.")) return;
+    
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/materiais/${id}`, { 
+        method: 'DELETE', 
+        headers 
+      });
+      if (res.status === 401 || res.status === 403) return fazerLogout();
+      
+      carregarBiblioteca(); // Recarrega a lista após apagar
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const fazerLogout = () => { localStorage.removeItem('studyx_token'); navigate('/'); };
 
@@ -165,10 +201,20 @@ export default function Dashboard() {
               <BarChart3 className="h-4 w-4" /> Stats
             </button>
           </nav>
+          
           <img src="/logo.png" alt="UniStudy Logo" className="h-10 md:h-14 absolute left-1/2 -translate-x-1/2 object-contain" />
-          <button onClick={fazerLogout} className="flex items-center gap-1.5 bg-secondary hover:bg-accent text-secondary-foreground font-semibold text-xs px-4 py-2 rounded-xl transition-colors border border-border/50">
-            <LogOut className="h-4 w-4" /> Sair
-          </button>
+          
+          {/* LADO DIREITO */}
+          <div className="flex items-center gap-3 z-10">
+            <NotificationBell 
+              token={token} 
+              onTarefaAdicionada={carregarTarefas} 
+            />
+            
+            <button onClick={fazerLogout} className="flex items-center gap-1.5 bg-secondary hover:bg-accent text-secondary-foreground font-semibold text-xs px-4 py-2 rounded-xl transition-colors border border-border/50">
+              <LogOut className="h-4 w-4" /> Sair
+            </button>
+          </div>
         </header>
 
         {/* RENDERIZAÇÃO CONDICIONAL DA PÁGINA */}
@@ -181,8 +227,18 @@ export default function Dashboard() {
 
             <main className="lg:col-span-3 space-y-6">
               <Planners tarefas={tarefas} setTarefas={setTarefas} token={token} carregarTarefas={carregarTarefas} abrirModalEditarTarefa={abrirModalEditarTarefa} roxoPrincipal={roxoPrincipal} cardClass={cardClass} />
-              <SubjectList materias={materias} setMateriaDetalhe={setMateriaDetalhe} abrirModalNovaMateria={abrirModalNovaMateria} cardClass={cardClass} circleBtnClass={circleBtnClass} />
-              <Library materiais={materiais} setIsModalDocumentoOpen={setIsModalDocumentoOpen} cardClass={cardClass} circleBtnClass={circleBtnClass} />
+              
+              {/* Repassando a função para o SubjectList caso use lá */}
+              <SubjectList 
+                materias={materias} 
+                setMateriaDetalhe={abrirDetalhesMateria} 
+                abrirModalNovaMateria={abrirModalNovaMateria} 
+                abrirModalEntrarMateria={abrirModalEntrarMateria}
+                cardClass={cardClass} 
+                circleBtnClass={circleBtnClass} 
+              />
+              
+              <Library materiais={materiais} setIsModalDocumentoOpen={setIsModalDocumentoOpen} deletarMaterial={deletarMaterial} cardClass={cardClass} circleBtnClass={circleBtnClass} />
             </main>
           </div>
         )}
@@ -192,7 +248,6 @@ export default function Dashboard() {
         )}
 
         {telaAtiva === 'grupos' && (
-          /* O novo componente importado está fazendo todo o trabalho aqui agora! */
           <Grupos token={token} />
         )}
       </div>
@@ -233,11 +288,30 @@ export default function Dashboard() {
           <div className="bg-card border border-border/50 rounded-3xl p-8 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto shadow-xl">
             <button onClick={() => setMateriaDetalhe(null)} className="absolute top-4 right-5 text-muted-foreground hover:text-foreground transition-colors"><X className="h-5 w-5" /></button>
 
-            <div className="flex items-center gap-3 mb-6 border-b border-border/50 pb-4">
-              <div className="w-6 h-6 rounded-full" style={{ backgroundColor: materiaDetalhe.cor }}></div>
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight text-foreground leading-tight">{materiaDetalhe.nome}</h2>
-                <p className="text-sm font-medium text-muted-foreground">Prof(a): {materiaDetalhe.professor || 'Não informado'}</p>
+            {/* ADICIONADO AQUI: Flex ajustado com o Badge de Convite */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-border/50 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: materiaDetalhe.cor }}></div>
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground">{materiaDetalhe.nome}</h2>
+                  <p className="text-xs font-medium text-muted-foreground mt-1">
+                    Prof: {materiaDetalhe.professor || 'N/A'} • <span className="text-primary font-bold border border-primary/20 bg-primary/5 px-2 py-0.5 rounded-full">Criador: {materiaDetalhe.criador_nome}</span>
+                  </p>
+                </div>
+              </div>
+              <div className="flex shrink-0">
+                <InviteBadge codigo={materiaDetalhe.codigo_compartilhamento} />
+              </div>
+            </div>
+
+            <div className="mb-6 bg-secondary/30 p-3 rounded-2xl border border-border/50">
+              <h3 className="text-xs font-bold mb-2 flex items-center gap-1.5 text-foreground"><Users className="h-3 w-3 text-primary"/> Membros ({membrosMateria.length})</h3>
+              <div className="flex gap-2 overflow-x-auto scrollbar-thin pb-1">
+                {membrosMateria.map(membro => (
+                  <span key={membro.id} className="text-[10px] font-semibold bg-background border border-border/60 px-3 py-1.5 rounded-full shrink-0 shadow-sm">
+                    {membro.nome} {membro.id === materiaDetalhe.usuario_id && '👑'}
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -276,8 +350,14 @@ export default function Dashboard() {
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
-              <button onClick={() => { abrirModalEditarMateria(materiaDetalhe); setMateriaDetalhe(null); }} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-sm bg-secondary text-secondary-foreground hover:bg-accent transition-colors"><Pencil className="h-4 w-4" /> Editar Disciplina</button>
-              <button onClick={() => deletarMateria(materiaDetalhe.id)} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"><Trash2 className="h-4 w-4" /> Apagar Disciplina</button>
+              {materiaDetalhe.is_criador ? (
+                <>
+                  <button onClick={() => { abrirModalEditarMateria(materiaDetalhe); setMateriaDetalhe(null); }} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-sm bg-secondary text-secondary-foreground hover:bg-accent transition-colors"><Pencil className="h-4 w-4" /> Editar</button>
+                  <button onClick={() => deletarMateria(materiaDetalhe.id)} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"><Trash2 className="h-4 w-4" /> Apagar Grupo</button>
+                </>
+              ) : (
+                <button onClick={() => sairMateria(materiaDetalhe.id)} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"><LogOut className="h-4 w-4" /> Sair da Disciplina</button>
+              )}
             </div>
           </div>
         </div>
@@ -296,7 +376,6 @@ export default function Dashboard() {
               <input type="text" placeholder="Título" required value={tituloTarefa} onChange={e => setTituloTarefa(e.target.value)} className={inputClass} />
               <input type="date" required value={dataTarefa} onChange={e => setDataTarefa(e.target.value)} className={inputClass} />
               
-              {/* NOVO: Campo de Descrição */}
               <textarea 
                 placeholder="Descrição / Conteúdos..." 
                 value={descTarefa} 
@@ -304,7 +383,6 @@ export default function Dashboard() {
                 className={`${inputClass} h-24 resize-none`}
               />
 
-              {/* NOVO: Botão do Anexo se a tarefa tiver arquivo */}
               {tarefaEditando.caminho_arquivo && (
                 <div className="bg-secondary/50 border border-border/50 rounded-xl p-3.5 flex items-center justify-between mb-4 mt-[-4px]">
                   <span className="text-xs font-semibold text-foreground flex items-center gap-2">
@@ -329,6 +407,15 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* MODAL DE ENTRAR NA DISCIPLINA */}
+      <JoinSubjectModal 
+        isOpen={isJoinModalOpen} 
+        onClose={() => setIsJoinModalOpen(false)} 
+        token={token}
+        onMateriaInscrita={carregarMaterias}
+      />
+      
     </div>
   );
 }
