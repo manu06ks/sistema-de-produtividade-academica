@@ -3,7 +3,7 @@ import { Users, Plus, X, ArrowLeft, Target, Trophy, Copy, Check, LogOut, User, B
 import { TimerContext } from '../contexts/TimerContext'; 
 
 export default function Grupos({ token }) {
-  // Consumindo o estado real do seu cronômetro
+  // Consumindo o estado real do cronômetro
   const { isTimerActive, timerMode } = useContext(TimerContext);
 
   const [grupos, setGrupos] = useState([]);
@@ -23,7 +23,7 @@ export default function Grupos({ token }) {
   // Feedback visual do botão de copiar
   const [copiado, setCopiado] = useState(false);
 
-  // Decodifica o token JWT para descobrir qual é o SEU id de usuário
+  // Decodifica o token JWT
   const meuUsuarioId = (() => {
     try { return JSON.parse(atob(token.split('.')[1])).id; } 
     catch (e) { return null; }
@@ -32,6 +32,21 @@ export default function Grupos({ token }) {
   const headers = { 
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json' 
+  };
+
+  // ==========================================
+  // CORREÇÃO: Função carregarGrupos adicionada
+  // ==========================================
+  const carregarGrupos = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/grupos/meus`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setGrupos(data);
+      }
+    } catch (e) { 
+      console.error("Erro ao carregar lista de grupos", e); 
+    }
   };
 
   useEffect(() => {
@@ -50,7 +65,6 @@ export default function Grupos({ token }) {
       
       return () => clearInterval(interval);
     }
-    // Adicionando os estados do timer como gatilhos de atualização imediata!
   }, [periodo, grupoAtivo, isTimerActive, timerMode]);
 
   const carregarRanking = async (grupoId, periodoFiltro) => {
@@ -237,10 +251,7 @@ export default function Grupos({ token }) {
 
                 <div className="space-y-3">
                   {ranking.map((membro, index) => {
-                    // Proteção de tipo: Garante que ambos sejam tratados como texto para não falhar o match
                     const souEu = String(membro.id) === String(meuUsuarioId);
-                    
-                    // Se for você, obedece ao timer LOCAL imediatamente. Se for os outros, olha pro banco.
                     const estaFocado = souEu ? (isTimerActive && timerMode === 'foco') : membro.esta_estudando;
 
                     return (

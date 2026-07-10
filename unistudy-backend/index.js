@@ -15,13 +15,13 @@ app.use(cors({
     credentials: true
 }));
 
-// 2. MIDDLEWARES GERAIS
+// MIDDLEWARES GERAIS
 app.use(express.json()); // Permite ler arquivos .json
 app.use('/uploads', express.static('uploads')); // Torna a pasta uploads acessível para o navegador
 
 db.connect();
 
-// 3. CONFIGURAÇÃO DO UPLOAD DE ARQUIVOS (Multer)
+// CONFIGURAÇÃO DO UPLOAD DE ARQUIVOS (Multer)
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/'); // Pasta onde os arquivos vão ficar
@@ -33,7 +33,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// MIDDLEWARE DE SEGURANÇA (Verificação de Token)
+//SEGURANÇA (Verificação de Token)
 function verificarToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Formato: "Bearer TOKEN_AQUI"
@@ -728,8 +728,6 @@ app.get("/notificacoes", verificarToken, async (req, res) => {
     }
 });
 // --- ROTA PARA ACEITAR/RECUSAR TAREFA ---
-// --- ROTA PARA ACEITAR/RECUSAR TAREFA ---
-// --- ROTA PARA ACEITAR/RECUSAR TAREFA (BLINDADA) ---
 app.post("/notificacoes/:id/responder", verificarToken, async (req, res) => {
     const { id } = req.params;
     const { aceitar } = req.body; 

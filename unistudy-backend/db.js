@@ -4,7 +4,7 @@ require('dotenv').config();
 const db = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
-        rejectUnauthorized: false // Isso substitui a necessidade de baixar aquele arquivo de certificado da Azure!
+        rejectUnauthorized: false
     }
 });
 

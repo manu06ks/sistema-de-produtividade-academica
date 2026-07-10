@@ -56,8 +56,17 @@ export default function Planners({ tarefas, setTarefas, token, carregarTarefas, 
     return `${y}-${m}-${d}`;
   };
 
-  const nextPeriod = () => { const novaData = new Date(currentDate); if (viewMode === 'mes') novaData.setMonth(novaData.getMonth() + 1); if (viewMode === 'semana') novaData.setDate(novaData.getDate() + 7); setCurrentDate(novaData); };
-  const prevPeriod = () => { const novaData = new Date(currentDate); if (viewMode === 'mes') novaData.setMonth(novaData.getMonth() - 1); if (viewMode === 'semana') novaData.setDate(novaData.getDate() - 7); setCurrentDate(novaData); };
+  const nextPeriod = () => { 
+    const novaData = new Date(currentDate); 
+    if (viewMode === 'mes') novaData.setMonth(novaData.getMonth() + 1);
+    if (viewMode === 'semana') novaData.setDate(novaData.getDate() + 7); 
+    setCurrentDate(novaData); 
+  };
+  const prevPeriod = () => { 
+    const novaData = new Date(currentDate);
+    if (viewMode === 'mes') novaData.setMonth(novaData.getMonth() - 1); 
+    if (viewMode === 'semana') novaData.setDate(novaData.getDate() - 7); 
+    setCurrentDate(novaData); };
   const goToToday = () => setCurrentDate(new Date());
 
   const mesAtual = currentDate.getMonth(); const anoAtual = currentDate.getFullYear();
