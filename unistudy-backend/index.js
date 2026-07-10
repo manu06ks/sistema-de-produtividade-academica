@@ -6,6 +6,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const gruposRouter = require("./grupos");
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -17,7 +18,7 @@ app.use(cors({
 
 // MIDDLEWARES GERAIS
 app.use(express.json()); // Permite ler arquivos .json
-app.use('/uploads', express.static('uploads')); // Torna a pasta uploads acessível para o navegador
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 db.connect();
 
