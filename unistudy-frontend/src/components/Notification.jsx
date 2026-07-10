@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Bell, Check, X, Users, Copy, LogIn } from 'lucide-react';
 
-/* ------------------------------------------------------------------ */
-/* 1. CARD DE NOTIFICAÇÃO (Usado dentro do sininho)                   */
-/* ------------------------------------------------------------------ */
+
+// CARD DE NOTIFICAÇÃO            
 function NotificationCard({ notificacao, onAceitar, onRecusar }) {
   const isInscricao = notificacao.tipo_notificacao === 'inscricao';
   const textoAcao = isInscricao ? "pediu para entrar em" : "compartilhou o item";
@@ -45,9 +44,7 @@ function NotificationCard({ notificacao, onAceitar, onRecusar }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* 2. DROPDOWN DE NOTIFICAÇÕES (Sininho)                              */
-/* ------------------------------------------------------------------ */
+// DROPDOWN DE NOTIFICAÇÕES (Sininho)                             
 export function NotificationBell({ token, onTarefaAdicionada }) {
   const [aberto, setAberto] = useState(false);
   const [notificacoes, setNotificacoes] = useState([]);
@@ -137,10 +134,7 @@ export function NotificationBell({ token, onTarefaAdicionada }) {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* 3. MODAL "ENTRAR EM DISCIPLINA"                                    */
-/* ------------------------------------------------------------------ */
+//"ENTRAR EM DISCIPLINA"                             
 export function JoinSubjectModal({ isOpen, onClose, token, onMateriaInscrita }) {
   const [codigo, setCodigo] = useState('');
   const [carregando, setCarregando] = useState(false);
@@ -224,9 +218,7 @@ export function JoinSubjectModal({ isOpen, onClose, token, onMateriaInscrita }) 
     </div>
   );
 }
-/* ------------------------------------------------------------------ */
-/* 4. BADGE DE CONVITE (Código + Copiar)                              */
-/* ------------------------------------------------------------------ */
+// CONVITE (Código + Copiar)                            
 export function InviteBadge({ codigo }) {
   const [copiado, setCopiado] = useState(false);
 
