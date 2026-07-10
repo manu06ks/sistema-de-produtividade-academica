@@ -1,16 +1,34 @@
-# React + Vite
+# UniStudy - Interface Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este diretório contém o código-fonte da interface do usuário do UniStudy, uma SPA (Single Page Application) responsiva e interativa desenvolvida em React.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+##  Tecnologias Utilizadas
 
-## React Compiler
+* **Framework Principal:** React (com Vite)
+* **Gerenciador de Pacotes:** npm
+* **Estilização:** CSS3 / Tailwind CSS (ou a biblioteca de estilos que usaram)
+* **Comunicação com a API:** Axios / Fetch API
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Estrutura de Pastas Interna
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+* `/src/components`: Componentes visuais reutilizáveis (botões, cards, inputs).
+* `/src/pages`: Páginas principais do sistema (Login, Cadastro, Dashboard, Kanban).
+* `/src/services`: Configuração de chamadas de rede e integração com a API backend.
+* `/src/assets`: Arquivos estáticos como imagens, ícones e logotipos.
+
+---
+
+##  Como Executar este Módulo Individualmente
+
+Caso queira rodar apenas a interface do frontend, execute os comandos abaixo dentro deste diretório:
+
+```bash
+# Instalar as dependências do React
+npm install
+
+# Iniciar o servidor de desenvolvimento local
+npm start
