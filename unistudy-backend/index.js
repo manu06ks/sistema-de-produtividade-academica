@@ -7,9 +7,15 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const gruposRouter = require("./grupos");
 const path = require('path');
-
+const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
+
+const dirUploads = path.join(__dirname, 'uploads');
+if (!fs.existsSync(dirUploads)){
+    fs.mkdirSync(dirUploads);
+    console.log("Pasta 'uploads' criada com sucesso!");
+}
 app.use(cors({
     origin: ['http://localhost:5173', 'https://blue-flower-03f9edf0f.7.azurestaticapps.net'], // Adicione aqui os links que podem acessar a API
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
