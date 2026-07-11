@@ -13,6 +13,27 @@ SPA (Single Page Application) do UniStudy, desenvolvida em React. Consome a API 
 
 ---
 
+## Componentes Visuais
+
+Aqui estão as principais ferramentas renderizadas pela SPA:
+
+### 📋 Gestão de Tarefas (Kanban)
+![Componente Kanban](./docs/comp-kanban.png)
+*Local:* `src/components/TaskForm.jsx` e painel principal.
+Permite o fluxo de trabalho visual de tarefas através de colunas de status.
+
+### ⏱️ Smart Timer e Foco
+![Componente Smart Timer](./docs/comp-timer.png)
+*Local:* `src/components/SmartTimer.jsx` (Estado mantido por `src/contexts/TimerContext.jsx`).
+Rastreia horas líquidas e envia o log de tempo para o banco de dados.
+
+### 🏆 Gamificação e Grupos
+![Componente de Grupos](./docs/comp-ranking-grupo.png)
+*Local:* `src/components/Grupos.jsx`.
+Exibe o Leaderboard de membros e o indicativo de estudo em tempo real.
+
+---
+
 ## Estrutura de Pastas Interna
 
 - `src/pages/` — páginas principais: `Login.jsx` (autenticação) e `Dashboard.jsx` (aplicação principal, após login).

@@ -2,6 +2,8 @@
 
 Plataforma de produtividade acadêmica full-stack, desenvolvida para ajudar estudantes universitários a organizar disciplinas, tarefas, materiais de estudo e grupos colaborativos em um único lugar.
 
+![Visão Geral do Sistema](./unistudy-frontend/docs/visao-geral-dashboard-inicio.png)
+
 **Equipe:** Daiana, Emanuela e Isadora
 
 **Deploy:** 100% em nuvem (Microsoft Azure) — link disponível no App Service (`unistudy`) e Static Web App (`unistudy-frontend`).
