@@ -1,34 +1,39 @@
 # UniStudy - Interface Frontend
 
-Este diretório contém o código-fonte da interface do usuário do UniStudy, uma SPA (Single Page Application) responsiva e interativa desenvolvida em React.
+SPA (Single Page Application) do UniStudy, desenvolvida em React. Consome a API REST do backend para autenticação, disciplinas, tarefas, timer de estudo, grupos e analytics.
 
 ---
 
-##  Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
-* **Framework Principal:** React (com Vite)
-* **Gerenciador de Pacotes:** npm
-* **Estilização:** CSS3 / Tailwind CSS (ou a biblioteca de estilos que usaram)
-* **Comunicação com a API:** Axios / Fetch API
+- **Framework Principal:** React (com Vite)
+- **Estilização:** Tailwind CSS
+- **Gráficos:** Recharts
+- **Padrão de UI:** componentes base gerados com apoio da IA v0 (Vercel) para manter consistência visual
 
 ---
 
 ## Estrutura de Pastas Interna
 
-* `/src/components`: Componentes visuais reutilizáveis (botões, cards, inputs).
-* `/src/pages`: Páginas principais do sistema (Login, Cadastro, Dashboard, Kanban).
-* `/src/services`: Configuração de chamadas de rede e integração com a API backend.
-* `/src/assets`: Arquivos estáticos como imagens, ícones e logotipos.
+- `src/pages/` — páginas principais: `Login.jsx` (autenticação) e `Dashboard.jsx` (aplicação principal, após login).
+- `src/components/` — componentes de funcionalidade: `SubjectList.jsx` (disciplinas), `TaskForm.jsx` (Kanban), `SmartTimer.jsx` (cronômetro de estudo), `Library.jsx` (materiais), `Grupos.jsx` (grupos de estudo), `StudyAnalytics.jsx` (estatísticas), `Notification.jsx` (notificações).
+- `src/components/ui/` — componentes de UI reutilizáveis (base shadcn/ui).
+- `src/contexts/TimerContext.jsx` — contexto React que mantém o estado global do Smart Timer entre páginas.
+- `src/assets/` — imagens e ícones estáticos.
 
----
+## Variáveis de Ambiente
 
-##  Como Executar este Módulo Individualmente
+- `.env.production` — usada no build de produção (aponta para a API publicada no Azure).
+- Em desenvolvimento local, a API é acessada em `http://localhost:5173` → `http://localhost:3000` (já liberado no CORS do backend).
 
-Caso queira rodar apenas a interface do frontend, execute os comandos abaixo dentro deste diretório:
+## Como Executar este Módulo Individualmente
 
 ```bash
-# Instalar as dependências do React
+# Instalar as dependências
 npm install
 
 # Iniciar o servidor de desenvolvimento local
-npm start
+npm run dev
+```
+
+A aplicação sobe por padrão em `http://localhost:5173`.
