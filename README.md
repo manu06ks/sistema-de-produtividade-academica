@@ -18,7 +18,7 @@ Plataforma de produtividade acadêmica full-stack, desenvolvida para ajudar estu
 - **Kanban de Tarefas** — CRUD de tarefas com prioridade, prazo, anexos e status
 - **Smart Timer** — cronômetro de estudo vinculado a tarefas, registra sessões no banco
 - **Grupos de Estudo** — criação/entrada por código + senha, ranking de horas por membro
-- **Notificações** — pedidos de entrada em disciplina/grupo, aceitar/recusar
+- **Notificações** — pedidos de entrada em disciplina/grupo + sugestoes de tarefas/prova da disciplina
 - **Analytics** — KPIs de tarefas concluídas, horas por disciplina, volume de entregas semanais
 
 ## Stack
