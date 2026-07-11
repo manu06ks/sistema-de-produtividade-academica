@@ -18,22 +18,22 @@ SPA (Single Page Application) do UniStudy, desenvolvida em React. Consome a API 
 Aqui estão as principais ferramentas renderizadas pela SPA:
 
 ### 📋 Gestão de Tarefas (Kanban)
-![Componente Kanban](./docs/comp-kanban.png)
+![Componente Kanban](./docs/comp-kanban.webp)
 *Local:* `src/components/TaskForm.jsx` e painel principal.
 Permite o fluxo de trabalho visual de tarefas através de colunas de status.
 
 ### ⏱️ Smart Timer e Foco
-![Componente Smart Timer](./docs/comp-timer.png)
+![Componente Smart Timer](./docs/comp-timer.webp)
 *Local:* `src/components/SmartTimer.jsx` (Estado mantido por `src/contexts/TimerContext.jsx`).
 Rastreia horas líquidas e envia o log de tempo para o banco de dados.
 
 ### 🏆 Gamificação e Grupos
-![Componente de Grupos](./docs/comp-ranking.png)
+![Componente de Grupos](./docs/comp-ranking.webp)
 *Local:* `src/components/Grupos.jsx`.
 Exibe o Leaderboard de membros e o indicativo de estudo em tempo real.
 
 ### 📚 Gestão de Disciplinas e Materiais
-![Componente Disciplina e Biblioteca](./docs/comp-materia.png)
+![Componente Disciplina e Biblioteca](./docs/comp-materia.webp)
 *Local:* `src/components/SubjectList.jsx` e `src/components/Library.jsx`.
 Gerenciamento de matérias com suporte a código de convite para ingresso de colegas, controle de participantes ativos e repositório digital para materiais específicos da disciplina.
 

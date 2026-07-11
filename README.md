@@ -1,23 +1,32 @@
 # UniStudy
 
-Plataforma de produtividade acadêmica full-stack, desenvolvida para ajudar estudantes universitários a organizar disciplinas, tarefas, materiais de estudo e grupos colaborativos em um único lugar.
+**Ecossistema Integrado de Produtividade Acadêmica** — plataforma web full-stack desenvolvida para ajudar estudantes universitários a organizar disciplinas, tarefas, materiais de estudo e grupos colaborativos em um único lugar.
 
-![Visão Geral do Sistema](./unistudy-frontend/docs/visao-geral-dashboard-inicio.png)
+![Visão Geral do Sistema](./unistudy-frontend/docs/visao-geral-dashboard-inicio.webp)
 
-**Equipe:** Daiana, Emanuela e Isadora
+**Equipe:** Daiana, Emanuela e Isadora — Engenharia de Projeto Integrador
 
-**Deploy:** 100% em nuvem (Microsoft Azure) — link disponível no App Service (`unistudy`) e Static Web App (`unistudy-frontend`).
+**Deploy:** 100% em nuvem (Microsoft Azure) — [App Service (`unistudy`)](https://blue-flower-03f9edf0f.7.azurestaticapps.net) + [Static Web App (`unistudy-frontend`)]
 
 ---
+
+## O Problema
+
+O UniStudy nasceu para combater os desafios enfrentados por estudantes no ambiente digital:
+
+- **Fragmentação exaustiva** — horas perdidas alternando entre ferramentas como WhatsApp, Google Drive e Trello
+- **Custo de contexto** — esforço mental desperdiçado na troca constante de ferramentas, que quebra a concentração
+- **Invisibilidade do esforço** — dificuldade em mensurar o tempo real dedicado aos estudos extraclasse
 
 ## Funcionalidades
 
 - **Autenticação & Cadastro** — login com JWT, senhas criptografadas com Bcrypt
 - **Disciplinas (Matérias)** — criação, edição, código de convite para colegas entrarem
-- **Kanban de Tarefas** — CRUD de tarefas com prioridade, prazo, anexos e status
+- **Planner Kanban** — gestão visual *drag and drop* de tarefas com prioridade, prazo, anexos e status
+- **Biblioteca** — upload e centralização de materiais (PDFs e imagens) vinculados às disciplinas
 - **Smart Timer** — cronômetro de estudo vinculado a tarefas, registra sessões no banco
 - **Grupos de Estudo** — criação/entrada por código + senha, ranking de horas por membro
-- **Notificações** — pedidos de entrada em disciplina/grupo, aceitar/recusar
+- **Notificações** — pedidos de entrada em disciplina/grupo + sugestoes de tarefas/prova da disciplina
 - **Analytics** — KPIs de tarefas concluídas, horas por disciplina, volume de entregas semanais
 
 ## Stack
@@ -33,45 +42,34 @@ Plataforma de produtividade acadêmica full-stack, desenvolvida para ajudar estu
 
 ```
 sistema-de-produtividade-academica/
-├── unistudy-backend/      # API REST (Node.js + Express)
-├── unistudy-frontend/     # SPA (React + Vite)
-├── 3_docs/                # Documentação técnica (arquitetura, API)
+├── unistudy-backend/      # API REST (Node.js + Express) — ver README próprio
+├── unistudy-frontend/     # SPA (React + Vite) — ver README próprio
+├── docs/                  # Documentação técnica do sistema
 └── .github/workflows/     # Pipelines de deploy (Azure)
 ```
 
 ## Como rodar localmente
 
-### Pré-requisitos
-- Node.js 18+
-- Uma instância PostgreSQL (local ou na nuvem)
+Guia completo em [docs/instalacao.md](docs/instalacao.md). Resumo rápido:
 
-### Backend
 ```bash
+# Backend
 cd unistudy-backend
 npm install
-```
-Crie um arquivo `.env` na raiz de `unistudy-backend/` com:
-```
-PORT=3000
-JWT_SECRET=sua_chave_secreta
-DATABASE_URL=postgresql://usuario:senha@host:5432/banco
-```
-```bash
 npm start
-```
 
-### Frontend
-```bash
+# Frontend (em outro terminal)
 cd unistudy-frontend
 npm install
 npm run dev
 ```
-A aplicação sobe por padrão em `http://localhost:5173` e já está configurada em CORS no backend para esse endereço.
 
 ## Documentação
 
-- [Arquitetura do sistema](3_docs/arquitetura.md)
-- [Documentação da API](3_docs/api.md)
+- [Guia de instalação](docs/instalacao.md)
+- [Arquitetura do sistema](docs/arquitetura.md)
+- [Documentação da API](docs/api.md)
+- [Manual do usuário](docs/manual-usuario.md)
 
 ## Desafios enfrentados
 
