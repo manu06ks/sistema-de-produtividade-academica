@@ -1,38 +1,49 @@
 # UniStudy - API Backend
 
-Este diretório contém o código-fonte do servidor do UniStudy, uma API RESTful construída para gerenciar o ecossistema de produtividade acadêmica.
+API RESTful em Node.js/Express que sustenta o ecossistema UniStudy: autenticação, disciplinas, tarefas (Kanban), materiais, sessões de estudo, grupos e notificações.
 
 ---
 
-##  Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
-* **Runtime:** Node.js
-* **Framework Web:** Express
-* **Banco de Dados:** PostgreSQL
-* **ORM:** Sequelize
-* **Autenticação:** JSON Web Token (JWT)
-* **Criptografia:** Bcrypt
-* **Upload de Arquivos:** Multer
-
----
-
-##  Estrutura de Pastas Interna
-
-* `/config`: Configurações de conexão com o banco de dados.
-* `/controllers`: Lógica de negócio e tratamento das requisições.
-* `/models`: Definição das tabelas e esquemas do banco de dados (Usuários, Tarefas, Arquivos).
-* `/routes`: Definição dos endpoints da API (Autenticação, Kanban, Uploads).
-* `/middlewares`: Filtros de segurança (como a validação do token JWT).
+- **Runtime:** Node.js
+- **Framework Web:** Express
+- **Banco de Dados:** PostgreSQL (driver `pg`, sem ORM)
+- **Autenticação:** JSON Web Token (JWT)
+- **Criptografia:** Bcrypt
+- **Upload de Arquivos:** Multer
 
 ---
 
-##  Como Executar este Módulo Individualmente
+## Estrutura de Pastas Interna
 
-Caso queira rodar apenas o backend, certifique-se de ter configurado o arquivo `.env` na raiz deste diretório e execute:
+O backend é organizado de forma monolítica, sem separação em camadas MVC:
+
+- `index.js` — ponto de entrada da aplicação: configuração do Express, CORS, middleware de autenticação (`verificarToken`) e todas as rotas de autenticação, disciplinas, tarefas, materiais, sessões de estudo, estatísticas e notificações.
+- `grupos.js` — router dedicado às rotas de grupos de estudo (`/grupos/*`), montado dentro de `index.js`.
+- `db.js` — configuração e conexão com o PostgreSQL.
+- `uploads/` — pasta local onde os arquivos enviados via Multer são armazenados (criada automaticamente na primeira execução).
+
+---
+
+## Variáveis de Ambiente
+
+Crie um arquivo `.env` nesta pasta com:
+
+```
+PORT=3000
+JWT_SECRET=sua_chave_secreta
+DATABASE_URL=postgresql://usuario:senha@host:5432/banco
+```
+
+## Como Executar este Módulo Individualmente
 
 ```bash
 # Instalar as dependências
 npm install
 
-# Iniciar o servidor em modo de desenvolvimento
+# Iniciar o servidor
 npm start
+```
+
+O servidor sobe por padrão na porta `3000` (ou a definida em `PORT`).
