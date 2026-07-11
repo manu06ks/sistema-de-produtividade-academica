@@ -6,7 +6,8 @@ Plataforma de produtividade acadêmica full-stack, desenvolvida para ajudar estu
 
 **Equipe:** Daiana, Emanuela e Isadora
 
-**Deploy:** 100% em nuvem (Microsoft Azure) — link disponível no App Service (`unistudy`) e Static Web App (`unistudy-frontend`).
+**Deploy:** 100% em nuvem (Microsoft Azure) — link disponível no [App Service (`unistudy`)](https://blue-flower-03f9edf0f.7.azurestaticapps.net) + [Static Web App (`unistudy-frontend`)]
+
 
 ---
 
