@@ -17,17 +17,7 @@ O UniStudy foi desenvolvido utilizando uma arquitetura **Cliente-Servidor** desa
 
 A comunicação entre as camadas ocorre através de requisições HTTP em formato JSON:
 
-```text
-[ Interface (Frontend) ]
-         │ ▲
-         │ │ Requisições HTTP (JSON)
-         ▼ │
-[   API REST (Backend)  ]
-         │ ▲
-         │ │ Camada de Persistência (pg)
-         ▼ │
-[ Banco de Dados PostgreSQL ]
-```
+<img width="1117" height="628" alt="image" src="https://github.com/user-attachments/assets/523ecdc5-3936-462d-9a64-9eee96859f8d" />
 
 O frontend é dividido em cinco módulos funcionais principais, todos consumindo a mesma API autenticada por JWT:
 
