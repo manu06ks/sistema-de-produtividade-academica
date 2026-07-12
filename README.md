@@ -6,7 +6,7 @@
 
 **Equipe:** Daiana, Emanuela e Isadora — Engenharia de Projeto Integrador
 
-**Deploy:** 100% em nuvem (Microsoft Azure) — [App Service (`unistudy`)](https://blue-flower-03f9edf0f.7.azurestaticapps.net) + [Static Web App (`unistudy-frontend`)]
+**Deploy:** 100% em nuvem (Microsoft Azure) — [App Service (`unistudy`)](https://blue-flower-03f9edf0f.7.azurestaticapps.net)
 
 ---
 
@@ -47,6 +47,10 @@ sistema-de-produtividade-academica/
 ├── docs/                  # Documentação técnica do sistema
 └── .github/workflows/     # Pipelines de deploy (Azure)
 ```
+
+## Arquitetura
+
+Cliente-Servidor desacoplado (API REST), sem uso de um framework MVC — o backend é uma API stateless consumida por uma SPA React. Detalhes completos em docs/arquitetura.md.
 
 ## Como rodar localmente
 

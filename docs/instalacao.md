@@ -10,16 +10,42 @@ Este documento apresenta o passo a passo para configurar e executar o ecossistem
 - **npm:** instalado automaticamente junto com o Node.js
 - **PostgreSQL:** instância local ou na nuvem
 - **Git:** para clonar e gerenciar as versões do repositório
-- **Editor de código:** Visual Studio Code (VSCode) ou similar
 
 ### Ambiente utilizado pela equipe
 - Sistema Operacional: Windows 11 (via PowerShell)
 - IDE: Visual Studio Code
-- Node.js: v24.16.0 (LTS)
 
 ---
 
-## 2. Clonando o repositório
+## 2. Dependências (com versões)
+
+### Backend (`unistudy-backend/package.json`)
+
+| Biblioteca | Versão |
+|---|---|
+| express | ^5.2.1 |
+| pg | ^8.20.0 |
+| bcrypt | ^6.0.0 |
+| jsonwebtoken | ^9.0.3 |
+| multer | ^2.1.1 |
+| cors | ^2.8.6 |
+| dotenv | ^17.4.1 |
+
+### Frontend (`unistudy-frontend/package.json`)
+
+| Biblioteca | Versão |
+|---|---|
+| react | ^19.2.5 |
+| react-dom | ^19.2.5 |
+| react-router-dom | ^7.14.2 |
+| vite | ^8.0.10 |
+| tailwindcss | ^4.2.4 |
+| recharts | ^3.8.1 |
+| lucide-react | ^1.18.0 |
+
+---
+
+## 3. Clonando o repositório
 
 ```bash
 git clone https://github.com/manu06ks/sistema-de-produtividade-academica.git
@@ -28,7 +54,7 @@ cd sistema-de-produtividade-academica
 
 ---
 
-## 3. Configurando o Backend
+## 4. Configurando o Backend
 
 ```bash
 cd unistudy-backend
@@ -55,7 +81,7 @@ O backend sobe por padrão em `http://localhost:3000`.
 
 ---
 
-## 4. Configurando o Frontend
+## 5. Configurando o Frontend
 
 Em outro terminal, a partir da raiz do projeto:
 
@@ -69,7 +95,7 @@ O frontend sobe por padrão em `http://localhost:5173` e já está liberado no C
 
 ---
 
-## 5. Configurando o banco de dados PostgreSQL
+## 6. Configurando o banco de dados PostgreSQL
 
 1. Abra seu gerenciador do PostgreSQL (ex: pgAdmin) ou o terminal do banco.
 2. Crie um banco de dados, por exemplo `unistudy_db`.
@@ -78,6 +104,12 @@ O frontend sobe por padrão em `http://localhost:5173` e já está liberado no C
 
 ---
 
-## 6. Testando a instalação
+## 7. Executando testes
+
+O projeto não possui testes automatizados no momento — a validação das funcionalidades (cadastro, login, criação de tarefas, Smart Timer, grupos, notificações) foi feita manualmente durante o desenvolvimento, testando cada fluxo pela interface.
+
+---
+
+## 8. Testando a instalação
 
 Com backend e frontend rodando, acesse `http://localhost:5173` no navegador e crie uma conta de teste pela tela de cadastro.
