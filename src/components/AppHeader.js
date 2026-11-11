@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Home, Users, BarChart3, LogOut } from 'lucide-react';
 import { useUser } from '@/components/UserProvider';
+import NotificationBell from '@/components/NotificationBell';
+import TimerPill from '@/components/TimerPill';
 
 const itens = [
   { href: '/dashboard', rotulo: 'Início', Icone: Home },
@@ -55,7 +57,8 @@ export default function AppHeader() {
       />
 
       <div className="z-10 flex items-center gap-3">
-        {/* O sino de notificações volta no passo 10 */}
+        <TimerPill />
+        <NotificationBell />
         <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
           {usuario?.nome}
         </span>

@@ -41,3 +41,13 @@ npmm install pg
 npm install bcryptjs -> hash de senhas
 npm install jose -> cria e verifica tokens jwt
 npm install lucide-react
+Testar armazenamento local:
+    npm install @azure/storage-blob
+    npm install -D azurite  
+
+
+
+RODAR LOCAL
+Ativar banco de dados
+npm run dev
+npm run azurite
