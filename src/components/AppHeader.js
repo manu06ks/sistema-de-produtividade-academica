@@ -6,11 +6,13 @@ import { Home, Users, BarChart3, LogOut } from 'lucide-react';
 import { useUser } from '@/components/UserProvider';
 import NotificationBell from '@/components/NotificationBell';
 import TimerPill from '@/components/TimerPill';
+import { Sparkles } from 'lucide-react'; 
 
 const itens = [
   { href: '/dashboard', rotulo: 'Início', Icone: Home },
   { href: '/grupos', rotulo: 'Grupos', Icone: Users },
   { href: '/stats', rotulo: 'Stats', Icone: BarChart3 },
+  { href: '/planos', rotulo: 'Planos', Icone: Sparkles },
 ];
 
 export default function AppHeader() {

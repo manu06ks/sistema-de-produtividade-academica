@@ -199,6 +199,10 @@ export default function DashboardPage() {
         <DisciplinaDetalheModal
           key={detalheId}
           disciplinaId={detalheId}
+          onAbrirAtividade={(a) => {
+            setDetalheId(null);
+            setAtividadeAberta(a);
+          }}
           onFechar={() => setDetalheId(null)}
           onEditar={(d) => {
             setDetalheId(null);

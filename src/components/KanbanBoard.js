@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import {
-  Archive,
   AlertCircle,
   Pencil,
   Circle,
@@ -38,14 +37,12 @@ function situacaoPrazo(atividade, hoje) {
   return 'normal';
 }
 
-export default function KanbanBoard({ atividades, hoje, onMudarStatus, onEditar, onLimpar }) {
+export default function KanbanBoard({ atividades, hoje, onMudarStatus, onEditar }) {
   const [arrastandoId, setArrastandoId] = useState(null);
   const [colunaAlvo, setColunaAlvo] = useState(null);
-  const [confirmandoLimpar, setConfirmandoLimpar] = useState(false);
 
   const carregando = atividades === null;
   const lista = atividades ?? [];
-  const temConcluidas = lista.some((a) => a.status === 'Concluído');
 
   function iniciarArraste(e, id) {
     e.dataTransfer.setData('text/plain', String(id));
@@ -70,11 +67,6 @@ export default function KanbanBoard({ atividades, hoje, onMudarStatus, onEditar,
 
     const atividade = lista.find((a) => a.id === id);
     if (atividade && atividade.status !== status) onMudarStatus(id, status);
-  }
-
-  async function limpar() {
-    setConfirmandoLimpar(false);
-    await onLimpar();
   }
 
   return (
@@ -105,37 +97,6 @@ export default function KanbanBoard({ atividades, hoje, onMudarStatus, onEditar,
                   {itens.length}
                 </span>
               </div>
-
-              {status === 'Concluído' && temConcluidas && (
-                confirmandoLimpar ? (
-                  <div className="flex items-center gap-1 text-[10px] font-semibold">
-                    <span className="text-muted-foreground">Esconder?</span>
-                    <button
-                      type="button"
-                      onClick={limpar}
-                      className="rounded-lg bg-destructive/10 px-2 py-1 text-destructive transition-colors hover:bg-destructive/20"
-                    >
-                      Sim
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmandoLimpar(false)}
-                      className="rounded-lg bg-secondary px-2 py-1 text-secondary-foreground transition-colors hover:bg-accent"
-                    >
-                      Não
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmandoLimpar(true)}
-                    title="Esconder todas as concluídas do quadro"
-                    className="flex items-center gap-1 rounded-lg border border-border/50 bg-card px-2 py-1 text-[10px] font-semibold text-muted-foreground transition-colors hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Archive className="h-3 w-3" /> Limpar
-                  </button>
-                )
-              )}
             </div>
 
             <div className="flex-1 space-y-2.5 px-1">

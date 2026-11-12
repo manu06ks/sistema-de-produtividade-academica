@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Loader2, CheckCircle2, AlertCircle, Paperclip, X } from 'lucide-react';
+import { ACCEPT_ARQUIVOS } from '@/lib/arquivos';
+import { conferirArquivoEscolhido, enviarParaApi, formatarTamanho } from '@/lib/anexos';
 
 const TIPOS = ['Tarefa', 'Prova', 'Trabalho'];
 const PRIORIDADES = ['Baixa', 'Média', 'Alta'];
@@ -9,6 +11,12 @@ const PRIORIDADES = ['Baixa', 'Média', 'Alta'];
 const campoClass =
   'w-full rounded-xl border border-border/60 bg-input/50 p-3 text-sm font-medium text-foreground transition-all placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/30';
 const rotuloClass = 'text-[10px] font-bold uppercase tracking-wide text-muted-foreground';
+
+const estiloFeedback = {
+  sucesso: 'bg-green-50 text-green-700',
+  aviso: 'bg-amber-50 text-amber-800',
+  erro: 'bg-destructive/10 text-destructive',
+};
 
 export default function TaskForm({ disciplinas, onCriada }) {
   const [tipo, setTipo] = useState('Tarefa');
@@ -19,20 +27,41 @@ export default function TaskForm({ disciplinas, onCriada }) {
   const [peso, setPeso] = useState('');
   const [descricao, setDescricao] = useState('');
   const [compartilhar, setCompartilhar] = useState(false);
+  const [arquivo, setArquivo] = useState(null); // File escolhido, ou null
+  const [erroArquivo, setErroArquivo] = useState('');
+  const campoArquivo = useRef(null);
 
   const [enviando, setEnviando] = useState(false);
-  const [feedback, setFeedback] = useState(null); // { tipo: 'sucesso' | 'erro', msg }
+  const [etapa, setEtapa] = useState('criando'); // 'criando' | 'anexando'
+  const [feedback, setFeedback] = useState(null); // { tipo: 'sucesso' | 'aviso' | 'erro', msg }
 
+  // Só o sucesso some sozinho. O aviso (anexo que falhou) fica até o próximo envio.
   useEffect(() => {
     if (feedback?.tipo !== 'sucesso') return;
     const t = setTimeout(() => setFeedback(null), 3500);
     return () => clearTimeout(t);
   }, [feedback]);
 
+  async function escolherArquivo(e) {
+    const campo = e.target;
+    const escolhido = campo.files?.[0] ?? null;
+    campo.value = ''; // deixa escolher o mesmo arquivo outra vez, se precisar
+    if (!escolhido) return;
+
+    setErroArquivo('');
+    const problema = await conferirArquivoEscolhido(escolhido);
+    if (problema) {
+      setErroArquivo(problema);
+      return;
+    }
+    setArquivo(escolhido);
+  }
+
   async function enviar(e) {
     e.preventDefault();
     setFeedback(null);
     setEnviando(true);
+    setEtapa('criando');
 
     try {
       const r = await fetch('/api/atividades', {
@@ -59,14 +88,33 @@ export default function TaskForm({ disciplinas, onCriada }) {
         return;
       }
 
+      // A atividade já existe: o quadro é atualizado antes de enviar o anexo.
+      onCriada(dados.atividade);
+
+      // O arquivo só pode ser enviado agora, porque precisa do id da atividade nova.
+      let anexo = null; // null = sem arquivo | { ok: true } | { ok: false, erro }
+      if (arquivo) {
+        setEtapa('anexando');
+        const envio = await enviarParaApi(`/api/atividades/${dados.atividade.id}/anexo`, {}, arquivo);
+        anexo = envio.ok ? { ok: true } : { ok: false, erro: envio.erro };
+      }
+
       const n = dados.convites_enviados;
-      setFeedback({
-        tipo: 'sucesso',
-        msg:
-          n > 0
-            ? `Atividade criada e ${n} convite${n > 1 ? 's' : ''} enviado${n > 1 ? 's' : ''}!`
-            : 'Atividade adicionada à agenda!',
-      });
+      const convites = n > 0 ? ` e ${n} convite${n > 1 ? 's' : ''} enviado${n > 1 ? 's' : ''}` : '';
+
+      if (anexo && !anexo.ok) {
+        setFeedback({
+          tipo: 'aviso',
+          msg: `Atividade criada${convites}, mas o anexo não foi enviado: ${anexo.erro} Abra a atividade no quadro e use “Anexar arquivo” para tentar de novo.`,
+        });
+      } else if (anexo) {
+        setFeedback({ tipo: 'sucesso', msg: `Atividade criada com anexo${convites}!` });
+      } else {
+        setFeedback({
+          tipo: 'sucesso',
+          msg: n > 0 ? `Atividade criada${convites}!` : 'Atividade adicionada à agenda!',
+        });
+      }
 
       setTitulo('');
       setData('');
@@ -74,7 +122,8 @@ export default function TaskForm({ disciplinas, onCriada }) {
       setDescricao('');
       setPrioridade('');
       setCompartilhar(false);
-      onCriada(dados.atividade);
+      setArquivo(null);
+      setErroArquivo('');
     } catch {
       setFeedback({ tipo: 'erro', msg: 'Erro de conexão. Tente novamente.' });
     } finally {
@@ -94,18 +143,14 @@ export default function TaskForm({ disciplinas, onCriada }) {
         <div
           role="status"
           aria-live="polite"
-          className={`mb-4 flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold ${
-            feedback.tipo === 'sucesso'
-              ? 'bg-green-50 text-green-700'
-              : 'bg-destructive/10 text-destructive'
-          }`}
+          className={`mb-4 flex items-start gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold ${estiloFeedback[feedback.tipo]}`}
         >
           {feedback.tipo === 'sucesso' ? (
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           ) : (
-            <AlertCircle className="h-4 w-4 shrink-0" />
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           )}
-          {feedback.msg}
+          <span className="min-w-0 break-words">{feedback.msg}</span>
         </div>
       )}
 
@@ -217,6 +262,57 @@ export default function TaskForm({ disciplinas, onCriada }) {
             />
           </div>
 
+          <div className="flex flex-col gap-1">
+            <span className={rotuloClass}>Anexo (opcional)</span>
+            <input
+              ref={campoArquivo}
+              type="file"
+              accept={ACCEPT_ARQUIVOS}
+              onChange={escolherArquivo}
+              aria-label="Escolher arquivo para anexar"
+              className="hidden"
+            />
+            {arquivo ? (
+              <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-secondary/40 p-2.5">
+                <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold text-foreground" title={arquivo.name}>
+                    {arquivo.name}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {formatarTamanho(Math.ceil(arquivo.size / 1024))}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setArquivo(null)}
+                  disabled={enviando}
+                  aria-label="Remover anexo"
+                  className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => campoArquivo.current?.click()}
+                disabled={enviando}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border/60 py-3 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Paperclip className="h-3.5 w-3.5" /> Anexar arquivo
+              </button>
+            )}
+            {erroArquivo && (
+              <p role="alert" className="text-[11px] font-medium text-destructive">
+                {erroArquivo}
+              </p>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              Um arquivo, até 10 MB (PDF, imagem, Word, PowerPoint, Excel ou texto).
+            </p>
+          </div>
+
           <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-border/60 bg-secondary/40 p-3 text-xs text-foreground">
             <input
               type="checkbox"
@@ -240,7 +336,8 @@ export default function TaskForm({ disciplinas, onCriada }) {
           >
             {enviando ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Salvando...
+                <Loader2 className="h-4 w-4 animate-spin" />{' '}
+                {etapa === 'anexando' ? 'Enviando o anexo...' : 'Salvando...'}
               </>
             ) : (
               <>Criar {tipo}</>

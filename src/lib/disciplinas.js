@@ -16,8 +16,8 @@ export const SQL_DISCIPLINA_VAZIA = `
   AND NOT EXISTS (SELECT 1 FROM material m
                    WHERE m.fk_disciplina_id_disciplina = d.id_disciplina)
   AND NOT EXISTS (SELECT 1 FROM plano_estudos p
-                   WHERE p.fk_disciplina_id_disciplina = d.id_disciplina)`;
-
+                   WHERE p.fk_disciplina_id_disciplina = d.id_disciplina
+                    AND p.fk_usuario_id_usuario <> d.fk_usuario_id_criador)`;
 // Devolve a disciplina só se o usuário for membro; senão, null.
 export async function buscarDisciplinaDoUsuario(disciplinaId, userId) {
   const r = await query(

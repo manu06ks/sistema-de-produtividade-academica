@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X, Users, Pencil, Trash2, LogOut } from 'lucide-react';
 import InviteBadge from '@/components/InviteBadge';
+import DisciplinaRelacionados from '@/components/DisciplinaRelacionados';
 
 const btnBase =
   'flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50';
@@ -12,6 +13,7 @@ export default function DisciplinaDetalheModal({
   onFechar,
   onEditar,
   onAlterada,
+  onAbrirAtividade,
 }) {
   const [d, setD] = useState(null);
   const [erro, setErro] = useState('');
@@ -74,7 +76,7 @@ export default function DisciplinaDetalheModal({
         role="dialog"
         aria-modal="true"
         aria-label="Detalhes da disciplina"
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-border/50 bg-card p-8 shadow-xl"
+        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-border/50 bg-card p-8 shadow-xl"
       >
         <button
           type="button"
@@ -117,6 +119,8 @@ export default function DisciplinaDetalheModal({
               </div>
               <InviteBadge codigo={d.codigo_compartilhamento} />
             </div>
+
+            <DisciplinaRelacionados disciplinaId={d.id} onAbrirAtividade={onAbrirAtividade} />
 
             <div className="mb-6 rounded-2xl border border-border/50 bg-secondary/30 p-3">
               <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold text-foreground">
