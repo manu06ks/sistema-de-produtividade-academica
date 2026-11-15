@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const result = await query(
       `SELECT u.id_usuario, u.nome, u.email, u.data_cadastro,
-              c.nome AS curso, i.sigla AS instituicao
+              c.nome AS curso, COALESCE(i.sigla, i.nome) AS instituicao
          FROM usuario u
          JOIN curso c ON c.id_curso = u.fk_curso_id_curso
          JOIN instituicao i ON i.id_instituicao = c.fk_instituicao_id_instituicao
