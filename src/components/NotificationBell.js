@@ -26,7 +26,11 @@ export default function NotificationBell() {
   useEffect(() => {
     carregar();
     const t = setInterval(carregar, INTERVALO_MS);
-    return () => clearInterval(t);
+    window.addEventListener('unistudy:convites', carregar);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener('unistudy:convites', carregar);
+    };
   }, [carregar]);
 
   // Ao abrir, atualiza na hora. Escape fecha.

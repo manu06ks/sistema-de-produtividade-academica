@@ -223,6 +223,8 @@ export default function DashboardPage() {
         onEntrou={(texto) => {
           avisar(texto);
           carregarDisciplinas();
+          window.dispatchEvent(new Event('unistudy:convites'));
+
         }}
       />
     </section>

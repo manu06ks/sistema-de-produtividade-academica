@@ -1,0 +1,73 @@
+name: Deploy UniStudy no Azure
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "24"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Build do Next.js
+        run: npm run build
+
+      - name: Montar o pacote (servidor standalone + arquivos estáticos)
+        run: |
+          set -euo pipefail
+          if [ ! -f .next/standalone/server.js ]; then
+            echo "ERRO: .next/standalone/server.js não existe. Falta output: 'standalone' no next.config?"
+            exit 1
+          fi
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+          if [ -d public ]; then cp -r public .next/standalone/public; fi
+          (cd .next/standalone && zip -qr "$GITHUB_WORKSPACE/unistudy.zip" .)
+          ls -lh unistudy.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unistudy-pacote
+          path: unistudy.zip
+          if-no-files-found: error
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write # necessário para o login sem senha (OIDC)
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: unistudy-pacote
+
+      - name: Login no Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1775F464F2CE42458E5A5150C3395BE7 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_FE1C297241184D798B490C7DA2A0B346 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_A1A3C12FC638440EAF55B60A82471788 }}
+
+      - name: Publicar no App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: unistudy
+          slot-name: Production
+          package: unistudy.zip

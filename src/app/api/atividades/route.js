@@ -70,13 +70,23 @@ export async function POST(request) {
   try {
     await client.query("BEGIN");
 
+    // Compartilhar: trava a disciplina até o fim. Assim, quem está entrando
+    // nela agora ou recebe este convite aqui, ou vê a atividade ao entrar.
+    // Nunca nenhum dos dois.
+    if (compartilhar) {
+      await client.query(
+        "SELECT 1 FROM disciplina WHERE id_disciplina = $1 FOR NO KEY UPDATE",
+        [disciplinaId]
+      );
+    }
+
     const nova = await client.query(
       `INSERT INTO atividade
               (titulo, descricao, data_vencimento, tipo_atividade, peso_nota,
-               fk_disciplina_id_disciplina, fk_usuario_id_criador)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+               fk_disciplina_id_disciplina, fk_usuario_id_criador, compartilhada)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id_atividade`,
-      [titulo, descricao, data, tipo, peso, disciplinaId, sessao.userId]
+      [titulo, descricao, data, tipo, peso, disciplinaId, sessao.userId, compartilhar]
     );
     const atividadeId = nova.rows[0].id_atividade;
 
