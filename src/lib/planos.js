@@ -1,6 +1,6 @@
 import { query, pool } from "@/lib/db";
 import { somarDias, diferencaDias } from "@/lib/estatisticas";
-import { configuracaoIA, iaConfigurada, gerarJson, calcularCustoUSD, ErroIA } from "@/lib/ia";
+import { iaConfigurada, gerarJson, ErroIA } from "@/lib/ia";
 import { INSTRUCAO_SISTEMA, MAX_BLOCOS_POR_DIA, TIPOS_BLOCO, montarPedidoUsuario } from "@/lib/planos-prompt";
 
 // ---------------------------------------------------------------------
@@ -346,11 +346,12 @@ async function gerarComTrava(client, userId, pedido, disciplina, hoje) {
 
   const contexto = await montarContexto(userId, pedido, disciplina, hoje);
   const idsAtividades = new Set([...contexto.atividades, ...contexto.concluidas].map((a) => a.id));
-  const configuracao = configuracaoIA();
 
-  // Chama a IA. Se a resposta vier inválida, uma nova tentativa, avisando o motivo.
+  // Chama a IA (que, se um modelo falhar, tenta o seguinte da lista). Se a resposta vier inválida, uma nova tentativa, avisando o motivo.
   let tokensEntrada = 0;
   let tokensSaida = 0;
+  let custo = 0;            // cada chamada tem o preço do modelo que respondeu
+  let modeloUsado = null;
   let estimado = false;
   let tentativas = 0;
   let plano = null;
@@ -369,6 +370,8 @@ async function gerarComTrava(client, userId, pedido, disciplina, hoje) {
       const resposta = await gerarJson({ sistema: INSTRUCAO_SISTEMA, usuario: pedidoTexto });
       tokensEntrada += resposta.tokensEntrada;
       tokensSaida += resposta.tokensSaida;
+      custo += resposta.custo;
+      modeloUsado = resposta.modelo;
       estimado ||= resposta.estimado;
       const lido = lerPlanoDaIA(resposta.texto, { dias: contexto.dias, minutosPorDia: pedido.minutosPorDia, idsAtividades });
       if (lido.ok) {
@@ -383,9 +386,11 @@ async function gerarComTrava(client, userId, pedido, disciplina, hoje) {
       if (e.uso) {
         tokensEntrada += e.uso.tokensEntrada;
         tokensSaida += e.uso.tokensSaida;
+        custo += e.uso.custo ?? 0;
         estimado ||= e.uso.estimado;
       }
       ultimoErro = e;
+      console.error("Falha na chamada à IA:", { codigo: e.codigo, detalhe: e.message });
       if (e.codigo === "cortada" || e.codigo === "vazia") {
         motivoAnterior = e.codigo === "cortada" ? "a resposta foi cortada por ficar longa demais" : "a resposta veio vazia";
         continue; // vale uma nova tentativa
@@ -394,7 +399,7 @@ async function gerarComTrava(client, userId, pedido, disciplina, hoje) {
     }
   }
 
-  const custo = calcularCustoUSD(tokensEntrada, tokensSaida, configuracao);
+  custo = Math.round(custo * 1_000_000) / 1_000_000; // a coluna custo_total tem 6 casas
 
   // A IA gastou tokens mas não deu um plano: o gasto fica registrado (sem plano)
   // e conta no limite do dia. Se nem chegou a responder, não houve custo.
@@ -413,7 +418,7 @@ async function gerarComTrava(client, userId, pedido, disciplina, hoje) {
   const usadas = new Set(plano.dias.flatMap((d) => d.blocos.map((b) => b.atividade_id)).filter(Boolean));
   const conteudo = JSON.stringify({
     versao: 1,
-    modelo: configuracao.modelo,
+    modelo: modeloUsado,
     parametros: {
       data_inicio: hoje,
       data_alvo: pedido.dataAlvo,
