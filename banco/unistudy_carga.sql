@@ -57,9 +57,15 @@ INSERT INTO Usuario (id_usuario, nome, email, senha_hash, data_cadastro, fk_Curs
 (25, 'Viv Bapty', 'vbaptyo@storify.com', '$2b$10$LTs74lZaPoKwi8bLy0MD1.3JbI0FDtJ40UVerdGLTQhJXFjvODh4S', '2026-02-09 00:00:00', 1),
 (26, 'Burl Derrington', 'bderringtonp@go.com', '$2b$10$LTs74lZaPoKwi8bLy0MD1.3JbI0FDtJ40UVerdGLTQhJXFjvODh4S', '2026-06-20 00:00:00', 2),
 (27, 'Wendi Lening', 'wleningq@si.edu', '$2b$10$LTs74lZaPoKwi8bLy0MD1.3JbI0FDtJ40UVerdGLTQhJXFjvODh4S', '2026-10-27 00:00:00', 3),
-(28, 'Lea Goodings', 'lgoodingsr@nytimes.com', '$2b$10$LTs74lZaPoKwi8bLy0MD1.3JbI0FDtJ40UVerdGLTQhJXFjvODh4S', '2026-11-14 00:00:00', 4),
+(28, 'Lea Goodings', 'lgoodingsr@nytimes.com', '$2b$10$LTs74lZaPoKwi8bLy0MD1.3JbI0FDtJ40UVerdGLTQhJXFjvODh4S', '2026-11-04 00:00:00', 4),
 (29, 'Arch Barns', 'abarnss@t-online.de', '$2b$10$LTs74lZaPoKwi8bLy0MD1.3JbI0FDtJ40UVerdGLTQhJXFjvODh4S', '2026-07-12 00:00:00', 1),
 (30, 'Bryon Hoofe', 'bhoofet@xing.com', '$2b$10$LTs74lZaPoKwi8bLy0MD1.3JbI0FDtJ40UVerdGLTQhJXFjvODh4S', '2026-06-24 00:00:00', 2);
+
+-- Ajusta as sequences: os ids acima foram informados na mão, então o próximo
+-- cadastro feito pela aplicação (SERIAL) precisa começar depois deles.
+SELECT setval(pg_get_serial_sequence('instituicao', 'id_instituicao'), (SELECT MAX(id_instituicao) FROM Instituicao));
+SELECT setval(pg_get_serial_sequence('curso', 'id_curso'), (SELECT MAX(id_curso) FROM Curso));
+SELECT setval(pg_get_serial_sequence('usuario', 'id_usuario'), (SELECT MAX(id_usuario) FROM Usuario));
 
 
 
@@ -126,10 +132,11 @@ INSERT INTO Atividade (id_atividade, titulo, descricao, data_vencimento, tipo_at
 SELECT setval(pg_get_serial_sequence('atividade', 'id_atividade'), 16);
 
 -- =====================================================================
--- 4. ATIVIDADE_USUARIO (52 registros: Aceitas, Pendentes, Recusadas e Removidas)
+-- 4. ATIVIDADE_USUARIO (56 registros aqui + 12 no complemento mais abaixo = 68:
+--    Aceitas, Pendentes, Recusadas e Removidas)
 -- =====================================================================
 INSERT INTO Atividade_Usuario (fk_Usuario_id_usuario, fk_Atividade_id_atividade, status_convite, status, prioridade, removida_em) VALUES
--- Banco de Dados I (9 aceitas válidas, 5 concluídas = 55.6%; + 3 casos ignorados)
+-- Banco de Dados I (final: 12 aceitas válidas, 6 concluídas = 50.0%; + 3 casos ignorados aqui)
 (1,  1, 'Aceita',   'Concluído', 'Alta',  NULL),
 (2,  1, 'Aceita',   'Concluído', 'Alta',  NULL),
 (3,  1, 'Aceita',   'Concluído', 'Média', NULL),
@@ -145,7 +152,7 @@ INSERT INTO Atividade_Usuario (fk_Usuario_id_usuario, fk_Atividade_id_atividade,
 (9,  2, 'Recusada', 'A Fazer',   'Baixa', NULL),                  -- ignorada (Recusada)
 (10, 3, 'Aceita',   'Concluído', 'Alta',  '2026-11-20 12:00:00'), -- ignorada (removida_em)
 
--- Sistemas Digitais (7 aceitas válidas, 5 concluídas = 71.4%)
+-- Sistemas Digitais (final: 8 aceitas válidas, 5 concluídas = 62.5%; + 1 Pendente)
 (1,  4, 'Aceita', 'Concluído', 'Alta',  NULL),
 (2,  4, 'Aceita', 'Concluído', 'Alta',  NULL),
 (6,  4, 'Aceita', 'Concluído', 'Média', NULL),
@@ -153,8 +160,9 @@ INSERT INTO Atividade_Usuario (fk_Usuario_id_usuario, fk_Atividade_id_atividade,
 (2,  5, 'Aceita', 'Concluído', 'Alta',  NULL),
 (12, 5, 'Aceita', 'Concluído', 'Média', NULL),
 (13, 5, 'Aceita', 'A Fazer',   'Alta',  NULL),
+(1,  5, 'Pendente', 'Fazendo', 'Baixa', NULL),                  -- ignorada (Pendente)
 
--- Engenharia de Software (6 aceitas válidas, 4 concluídas = 66.7%; + 1 Pendente)
+-- Engenharia de Software (final: 6 aceitas válidas, 4 concluídas = 66.7%; + 1 Pendente)
 (3,  6, 'Aceita',   'Concluído', 'Alta',  NULL),
 (8,  6, 'Aceita',   'Concluído', 'Média', NULL),
 (15, 6, 'Aceita',   'Concluído', 'Média', NULL),
@@ -163,7 +171,7 @@ INSERT INTO Atividade_Usuario (fk_Usuario_id_usuario, fk_Atividade_id_atividade,
 (17, 7, 'Aceita',   'A Fazer',   'Baixa', NULL),
 (18, 6, 'Pendente', 'A Fazer',   'Baixa', NULL),
 
--- Estruturas de Dados (6 aceitas válidas, 3 concluídas = 50.0%)
+-- Estruturas de Dados (final: 7 aceitas válidas, 4 concluídas = 57.1%)
 (1,  8, 'Aceita', 'Concluído', 'Alta',  NULL),
 (5,  8, 'Aceita', 'Concluído', 'Alta',  NULL),
 (10, 8, 'Aceita', 'Fazendo',   'Média', NULL),
@@ -171,15 +179,14 @@ INSERT INTO Atividade_Usuario (fk_Usuario_id_usuario, fk_Atividade_id_atividade,
 (20, 9, 'Aceita', 'Fazendo',   'Alta',  NULL),
 (21, 9, 'Aceita', 'A Fazer',   'Média', NULL),
 
--- Redes de Computadores (5 aceitas válidas, 2 concluídas = 40.0%)
+-- Redes de Computadores (final: 7 aceitas válidas, 3 concluídas = 42.9%)
 (7,  10, 'Aceita', 'Concluído', 'Alta',  NULL),
 (12, 10, 'Aceita', 'Fazendo',   'Média', NULL),
 (24, 10, 'Aceita', 'A Fazer',   'Média', NULL),
 (25, 11, 'Aceita', 'Concluído', 'Baixa', NULL),
 (26, 11, 'Aceita', 'Fazendo',   'Baixa', NULL),
-(1, 5, 'Pendente', 'Fazendo',   'Baixa', NULL),
 
--- Arquitetura de Computadores (5 aceitas válidas, 4 concluídas = 80.0%)
+-- Arquitetura de Computadores (final: 6 aceitas válidas, 5 concluídas = 83.3%; + 1 Recusada)
 (11, 12, 'Aceita', 'Concluído', 'Alta',  NULL),
 (13, 12, 'Aceita', 'Concluído', 'Alta',  NULL),
 (13, 13, 'Aceita', 'Concluído', 'Alta',  NULL),
@@ -188,14 +195,14 @@ INSERT INTO Atividade_Usuario (fk_Usuario_id_usuario, fk_Atividade_id_atividade,
 (28, 13, 'Aceita', 'Concluído', 'Média', NULL),
 (29, 13, 'Aceita', 'Fazendo',   'Alta',  NULL),
 
--- Cálculo II (5 aceitas válidas, 1 concluída = 20.0%)
+-- Cálculo II (final: 6 aceitas válidas, 2 concluídas = 33.3%)
 (14, 14, 'Aceita', 'Concluído', 'Alta',  NULL),
 (16, 14, 'Aceita', 'Fazendo',   'Média', NULL),
 (20, 14, 'Aceita', 'A Fazer',   'Média', NULL),
 (24, 15, 'Aceita', 'Fazendo',   'Alta',  NULL),
 (28, 15, 'Aceita', 'A Fazer',   'Alta',  NULL),
 
--- Sistemas Operacionais (4 aceitas válidas, 1 concluída = 25.0%)
+-- Sistemas Operacionais (final: 5 aceitas válidas, 2 concluídas = 40.0%)
 (3,  16, 'Aceita', 'Concluído', 'Alta',  NULL),
 (17, 16, 'Aceita', 'Fazendo',   'Média', NULL),
 (25, 16, 'Aceita', 'Fazendo',   'Alta',  NULL),
@@ -276,6 +283,19 @@ INSERT INTO Sessao_Estudo (id_sessao, data_hora_inicio, data_hora_fim, tempo_tot
 
 SELECT setval(pg_get_serial_sequence('sessao_estudo', 'id_sessao'), 50);
 
+-- Datas relativas a HOJE: a aplicação só conta sessões de "hoje", "esta semana"
+-- e "este mês" (horário de São Paulo). Sem este ajuste, as sessões de nov/2026
+-- ficariam fora da aba semanal e o ranking dos grupos e as estatísticas
+-- apareceriam zerados. Move todas as sessões encerradas pelo mesmo número de
+-- dias, de modo que a mais recente caia em ONTEM. Só as datas mudam: os minutos
+-- continuam iguais, então as Consultas 01, 02 e 03 dão o mesmo resultado.
+UPDATE Sessao_Estudo
+   SET data_hora_inicio = data_hora_inicio + d.deslocamento,
+       data_hora_fim    = data_hora_fim    + d.deslocamento
+  FROM (SELECT ((NOW() AT TIME ZONE 'America/Sao_Paulo')::date - DATE '2026-11-22')
+               * INTERVAL '1 day' AS deslocamento) AS d
+ WHERE data_hora_fim IS NOT NULL;
+
 -- =====================================================================
 -- 6. GRUPOS DE ESTUDO E PARTICIPAÇÃO (4 grupos com 20 participações)
 -- =====================================================================
@@ -288,7 +308,7 @@ INSERT INTO Grupo_Estudos (id_grupo, nome, descricao, data_criacao, status_ativo
 SELECT setval(pg_get_serial_sequence('grupo_estudos', 'id_grupo'), 4);
 
 INSERT INTO participa (fk_Usuario_id_usuario, fk_Grupo_Estudos_id_grupo, data_ingresso, papel_membro) VALUES
--- Grupo 1: Maratona Banco de Dados (usuário 4 tem 0 min encerrados em sessões? Não, tem 60; usuário 22 tem 0 min)
+-- Grupo 1: Maratona Banco de Dados (o usuário 22 não tem sessões: aparece com 0 minutos)
 (1,  1, '2026-11-01', 'Administrador'),
 (2,  1, '2026-11-02', 'Membro'),
 (3,  1, '2026-11-03', 'Membro'),

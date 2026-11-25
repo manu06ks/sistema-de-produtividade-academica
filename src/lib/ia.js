@@ -1,4 +1,3 @@
-
 //  API REST do Gemini direto com fetch (sem SDK): é uma chamada só, e
 // assim não há dependência nova para instalar nem para atualizar.
 
@@ -14,6 +13,7 @@ const PADRAO = {
 const TEMPO_LIMITE_MS = 90_000;     // a IA pode levar uns segundos; mais que isso é problema
 const MAX_TOKENS_SAIDA = 16384;     // teto de segurança (os "tokens de pensamento" também contam aqui)
 const NIVEIS_PENSAMENTO = ["minimal", "low", "medium", "high"];
+const ESPERAS_503_MS = [2000, 5000, 10000]; // 1 chamada + até 3 novas tentativas se o Google responder 503
 
 // Lê a configuração a cada uso (e não ao carregar o arquivo), assim uma mudança
 // no .env.local vale assim que o servidor reiniciar.
@@ -94,26 +94,34 @@ export async function gerarJson({ sistema, usuario }) {
   // Menos "pensamento" = resposta mais rápida e mais barata. Opcional.
   if (config.nivelPensamento) generationConfig.thinkingConfig = { thinkingLevel: config.nivelPensamento };
 
-  let resposta;
-  try {
-    resposta = await fetch(`${URL_BASE}/models/${encodeURIComponent(config.modelo)}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": config.chave },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: sistema }] },
-        contents: [{ role: "user", parts: [{ text: usuario }] }],
-        generationConfig,
-      }),
-      signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
-    });
-  } catch (e) {
-    if (e?.name === "TimeoutError" || e?.name === "AbortError") {
-      throw new ErroIA("tempo_esgotado", "a IA não respondeu a tempo");
-    }
-    throw new ErroIA("indisponivel", String(e?.message ?? e));
-  }
+  const corpo = JSON.stringify({
+    systemInstruction: { parts: [{ text: sistema }] },
+    contents: [{ role: "user", parts: [{ text: usuario }] }],
+    generationConfig,
+  });
 
-  const dados = await resposta.json().catch(() => null);
+  // O 503 "alta demanda" do Google costuma passar em poucos segundos: tenta de novo
+  // (esperando um pouco mais a cada vez) antes de desistir e avisar o aluno.
+  let resposta;
+  let dados;
+  for (let n = 0; ; n++) {
+    try {
+      resposta = await fetch(`${URL_BASE}/models/${encodeURIComponent(config.modelo)}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": config.chave },
+        body: corpo,
+        signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
+      });
+    } catch (e) {
+      if (e?.name === "TimeoutError" || e?.name === "AbortError") {
+        throw new ErroIA("tempo_esgotado", "a IA não respondeu a tempo");
+      }
+      throw new ErroIA("indisponivel", String(e?.message ?? e));
+    }
+    dados = await resposta.json().catch(() => null);
+    if (resposta.status !== 503 || n >= ESPERAS_503_MS.length) break;
+    await new Promise((r) => setTimeout(r, ESPERAS_503_MS[n]));
+  }
   if (!resposta.ok) throw erroDeHttp(resposta.status, dados);
 
   const candidato = dados?.candidates?.[0];
